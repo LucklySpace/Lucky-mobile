@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 
@@ -17,7 +18,7 @@ class SearchPage extends GetView<SearchController> {
   Widget build(BuildContext context) {
     final searchTextController = TextEditingController();
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       appBar: _buildAppBar(searchTextController),
       body: _buildBody(searchTextController),
     );
@@ -39,11 +40,11 @@ class SearchPage extends GetView<SearchController> {
   /// 构建搜索输入框，支持自动焦点和提交搜索
   Widget _buildSearchField(TextEditingController searchTextController) {
     return Container(
-      height: 32,
+      height: AppSizes.spacing32,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFCCCCCC), width: 1),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radius4),
+        border: Border.all(color: AppColors.border, width: AppSizes.spacing1),
       ),
       child: TextField(
         controller: searchTextController,
@@ -51,17 +52,17 @@ class SearchPage extends GetView<SearchController> {
         textAlignVertical: TextAlignVertical.center,
         decoration: InputDecoration(
           hintText: '搜索聊天记录',
-          hintStyle: TextStyle(color: Colors.grey[400]),
+          hintStyle: const TextStyle(color: AppColors.textHint),
           border: InputBorder.none,
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+              const EdgeInsets.symmetric(horizontal: AppSizes.spacing8, vertical: 0),
           isDense: true,
           prefixIcon:
-              const Icon(Icons.search, color: Color(0xFF999999), size: 18),
+              const Icon(Icons.search, color: AppColors.textHint, size: AppSizes.font18),
           prefixIconConstraints:
-              const BoxConstraints(minWidth: 40, minHeight: 32),
+              const BoxConstraints(minWidth: AppSizes.spacing40, minHeight: AppSizes.spacing32),
         ),
-        style: const TextStyle(fontSize: kSize16),
+        style: const TextStyle(fontSize: AppSizes.font16),
         //onSubmitted: controller.performSearch,
       ),
     );
@@ -72,7 +73,7 @@ class SearchPage extends GetView<SearchController> {
     return TextButton(
       onPressed: () => Get.toNamed('${Routes.HOME}'),
       style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 8)),
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing8)),
       child: const Text('取消'),
     );
   }
@@ -101,12 +102,12 @@ class SearchPage extends GetView<SearchController> {
   /// 显示匹配用户的头像、名称和消息计数，支持分隔线和错误图像处理。
 // Widget _buildSearchResults() {
 //   return ListView.separated(
-//     padding: const EdgeInsets.all(16),
+//     padding: const EdgeInsets.all(AppSizes.spacing16),
 //     itemCount: controller.searchResults.length,
 //     separatorBuilder: (context, index) => const Divider(
 //       height: 0.5,
 //       thickness: 0.5,
-//       color: Color(0xFFCCCCCC),
+//       color: AppColors.divider,
 //     ),
 //     itemBuilder: (context, index) {
 //       final result = controller.searchResults[index];
@@ -114,9 +115,9 @@ class SearchPage extends GetView<SearchController> {
 //         height: 48,
 //         child: Row(
 //           children: [
-//             const SizedBox(width: 12),
+//             const SizedBox(width: AppSizes.spacing12),
 //             ClipRRect(
-//               borderRadius: BorderRadius.circular(4),
+//               borderRadius: BorderRadius.circular(AppSizes.radius4),
 //               child: Image.network(
 //                 result.avatar,
 //                 width: 32,
@@ -126,29 +127,29 @@ class SearchPage extends GetView<SearchController> {
 //                   width: 32,
 //                   height: 32,
 //                   decoration: BoxDecoration(
-//                     color: Colors.grey[300],
-//                     borderRadius: BorderRadius.circular(4),
+//                     color: AppColors.background,
+//                     borderRadius: BorderRadius.circular(AppSizes.radius4),
 //                   ),
-//                   child: const Icon(Icons.person, size: 16, color: Colors.grey),
+//                   child: const Icon(Icons.person, size: 16, color: AppColors.textHint),
 //                 ),
 //               ),
 //             ),
-//             const SizedBox(width: 12),
+//             const SizedBox(width: AppSizes.spacing12),
 //             Expanded(
 //               child: Column(
 //                 mainAxisAlignment: MainAxisAlignment.center,
 //                 crossAxisAlignment: CrossAxisAlignment.start,
 //                 children: [
-//                   Text(result.name, style: const TextStyle(fontSize: 14)),
-//                   const SizedBox(height: 2),
+//                   Text(result.name, style: const TextStyle(fontSize: AppSizes.font14)),
+//                   const SizedBox(height: AppSizes.spacing2),
 //                   Text(
 //                     '${result.messageCount}条相关聊天记录',
-//                     style: const TextStyle(fontSize: 12, color: Colors.grey),
+//                     style: const TextStyle(fontSize: AppSizes.font12, color: AppColors.textHint),
 //                   ),
 //                 ],
 //               ),
 //             ),
-//             const SizedBox(width: 12),
+//             const SizedBox(width: AppSizes.spacing12),
 //           ],
 //         ),
 //       );
@@ -163,14 +164,14 @@ class SearchPage extends GetView<SearchController> {
 //   return Obx(() {
 //     if (controller.searchHistory.isEmpty) {
 //       return const Center(
-//         child: Text('暂无搜索历史', style: TextStyle(color: Colors.grey)),
+//         child: Text('暂无搜索历史', style: TextStyle(color: AppColors.textHint)),
 //       );
 //     }
 //     return ListView(
-//       padding: const EdgeInsets.all(16),
+//       padding: const EdgeInsets.all(AppSizes.spacing16),
 //       children: [
 //         _buildHistoryHeader(),
-//         const SizedBox(height: 8),
+//         const SizedBox(height: AppSizes.spacing8),
 //         _buildHistoryTags(searchTextController),
 //       ],
 //     );
@@ -184,7 +185,7 @@ class SearchPage extends GetView<SearchController> {
 //     children: [
 //       const Text(
 //         '搜索历史',
-//         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+//         style: TextStyle(fontSize: AppSizes.font16, fontWeight: FontWeight.bold),
 //       ),
 //       IconButton(
 //         icon: const Icon(Icons.delete_outline),
@@ -197,13 +198,13 @@ class SearchPage extends GetView<SearchController> {
 // /// 构建历史标签 Wrap 布局
 // Widget _buildHistoryTags(TextEditingController searchTextController) {
 //   return Wrap(
-//     spacing: 8,
-//     runSpacing: 8,
+//     spacing: AppSizes.spacing8,
+//     runSpacing: AppSizes.spacing8,
 //     children: controller.searchHistory.map((keyword) {
 //       return ActionChip(
-//         label: Text(keyword, style: const TextStyle(fontSize: 14)),
-//         backgroundColor: Colors.grey[100],
-//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+//         label: Text(keyword, style: const TextStyle(fontSize: AppSizes.font14)),
+//         backgroundColor: AppColors.background,
+//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radius16)),
 //         onPressed: () {
 //           searchTextController.text = keyword;
 //           controller.performSearch(keyword);

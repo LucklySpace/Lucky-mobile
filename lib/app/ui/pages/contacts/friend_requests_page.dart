@@ -1,6 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../controller/contact_controller.dart';
 import '../../../models/friend_request.dart';
 
@@ -13,12 +16,13 @@ class FriendRequestsPage extends GetView<ContactController> {
     contactController.fetchFriendRequests();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('新的朋友'),
         elevation: 0,
+        backgroundColor: AppColors.primary,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textWhite),
           onPressed: () => Get.back(),
         ),
       ),
@@ -28,24 +32,24 @@ class FriendRequestsPage extends GetView<ContactController> {
           Expanded(
             child: Obx(() {
               if (controller.isLoadingRequests.value) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary)));
               }
               if (controller.friendRequests.isEmpty) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.person_add_disabled,
-                        size: 64,
-                        color: Colors.grey[300],
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
+                children: const [
+                  Icon(
+                    Icons.person_add_disabled,
+                    size: AppSizes.spacing64,
+                    color: AppColors.textDisabled,
+                  ),
+                      SizedBox(height: AppSizes.spacing16),
+                      Text(
                         '暂无好友申请',
                         style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
+                          fontSize: AppSizes.font16,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -54,7 +58,7 @@ class FriendRequestsPage extends GetView<ContactController> {
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
                 itemCount: controller.friendRequests.length,
                 itemBuilder: (context, index) {
                   return _buildRequestItem(
@@ -70,30 +74,36 @@ class FriendRequestsPage extends GetView<ContactController> {
 
   Widget _buildSearchBar(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.spacing16,
+        AppSizes.spacing8,
+        AppSizes.spacing16,
+        AppSizes.spacing16,
+      ),
       child: Material(
         elevation: 2,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppSizes.radius12),
         child: TextField(
           decoration: InputDecoration(
             hintText: '搜索',
-            hintStyle: TextStyle(color: Colors.grey[500]),
-            prefixIcon:
-                Icon(Icons.search, color: Theme.of(context).primaryColor),
+            hintStyle: const TextStyle(color: AppColors.textHint),
+            prefixIcon: const Icon(Icons.search, color: AppColors.primary),
             filled: true,
-            fillColor: Colors.white,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            fillColor: AppColors.surface,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.spacing16,
+              vertical: AppSizes.spacing12,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppSizes.radius12),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppSizes.radius12),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppSizes.radius12),
               borderSide: BorderSide.none,
             ),
           ),
@@ -104,52 +114,58 @@ class FriendRequestsPage extends GetView<ContactController> {
 
   Widget _buildRequestItem(BuildContext context, FriendRequest request) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppSizes.spacing16,
+        vertical: AppSizes.spacing6,
+      ),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radius12),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: AppColors.shadow,
             blurRadius: 6,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(AppSizes.spacing12),
         child: Row(
           children: [
             // 圆角矩形头像
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppSizes.radius8),
               child: Container(
-                width: 50,
-                height: 50,
+                width: AppSizes.spacing50,
+                height: AppSizes.spacing50,
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(AppSizes.radius8),
                 ),
                 child: request.avatar.isNotEmpty
-                    ? Image.network(
-                        request.avatar,
+                    ? CachedNetworkImage(
+                        imageUrl: request.avatar,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.person,
-                            size: 30,
-                            color: Colors.grey[400],
-                          );
-                        },
+                        placeholder: (context, url) => const Icon(
+                          Icons.person,
+                          size: AppSizes.spacing30,
+                          color: AppColors.textDisabled,
+                        ),
+                        errorWidget: (context, url, error) => const Icon(
+                          Icons.person,
+                          size: AppSizes.spacing30,
+                          color: AppColors.textDisabled,
+                        ),
                       )
-                    : Icon(
+                    : const Icon(
                         Icons.person,
-                        size: 30,
-                        color: Colors.grey[400],
+                        size: AppSizes.spacing30,
+                        color: AppColors.textDisabled,
                       ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSizes.spacing12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,16 +174,17 @@ class FriendRequestsPage extends GetView<ContactController> {
                     request.name,
                     style: const TextStyle(
                       fontWeight: FontWeight.w500,
-                      fontSize: 16,
+                      fontSize: AppSizes.font16,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSizes.spacing4),
                   // 显示验证消息
                   Text(
                     request.message.isEmpty ? '请求添加您为好友' : request.message,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
+                    style: const TextStyle(
+                      fontSize: AppSizes.font14,
+                      color: AppColors.textSecondary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -190,32 +207,38 @@ class FriendRequestsPage extends GetView<ContactController> {
           ElevatedButton(
             onPressed: () => controller.handleFriendApprove(request.id, 1),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppSizes.radius6),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing12,
+                vertical: AppSizes.spacing8,
+              ),
               minimumSize: const Size(0, 0),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: const Text('同意'),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSizes.spacing8),
           OutlinedButton(
             onPressed: () => controller.handleFriendApprove(request.id, 2),
             style: OutlinedButton.styleFrom(
-              side: BorderSide(color: Colors.grey[300]!),
+              side: const BorderSide(color: AppColors.border),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppSizes.radius6),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing12,
+                vertical: AppSizes.spacing8,
+              ),
               minimumSize: const Size(0, 0),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: const Text(
               '拒绝',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
           ),
         ],
@@ -223,32 +246,38 @@ class FriendRequestsPage extends GetView<ContactController> {
     } else if (request.approveStatus == 1) {
       // 已同意状态
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing12,
+          vertical: AppSizes.spacing8,
+        ),
         decoration: BoxDecoration(
-          color: Colors.green[50],
-          borderRadius: BorderRadius.circular(6),
+          color: AppColors.success.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(AppSizes.radius6),
         ),
         child: const Text(
           '已同意',
           style: TextStyle(
-            color: Colors.green,
-            fontSize: 12,
+            color: AppColors.success,
+            fontSize: AppSizes.font12,
           ),
         ),
       );
     } else {
       // 已拒绝状态
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing12,
+          vertical: AppSizes.spacing8,
+        ),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(6),
+          color: AppColors.textDisabled.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(AppSizes.radius6),
         ),
         child: const Text(
           '已拒绝',
           style: TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
+            color: AppColors.textSecondary,
+            fontSize: AppSizes.font12,
           ),
         ),
       );

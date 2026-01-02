@@ -12,15 +12,16 @@ import '../../constants/app_message.dart';
 import '../../utils/objects.dart';
 import '../../utils/rsa.dart';
 import '../api/api_service.dart';
-import '../api/websocket_service.dart';
+import '../core/handlers/error_handler.dart';
+import 'package:flutter_im/exceptions/app_exception.dart';
 import '../models/User.dart';
 import '../models/message_receive.dart';
+import '../services/websocket_service.dart';
 import 'chat_controller.dart';
 import 'contact_controller.dart';
 
 /// 用户控制器：管理用户认证、存储、WebSocket 连接
 class UserController extends GetxController with WidgetsBindingObserver {
-
   // 单例访问
   static UserController get to => Get.find();
 
@@ -105,8 +106,6 @@ class UserController extends GetxController with WidgetsBindingObserver {
     }
   }
 
-
-
   // ====================== 认证（登录/登出） ======================
 
   /// 用户登录（加密密码并调用 API），成功后会触发 startConnect()
@@ -126,17 +125,17 @@ class UserController extends GetxController with WidgetsBindingObserver {
 
       final response = await _apiService.login(loginData);
       return _handleApiResponse(response, onSuccess: (data) {
-        if (Objects.isNotBlank(data['accessToken']) &&
-            Objects.isNotBlank(data['userId'])) {
-          token.value = data['accessToken'];
-          userId.value = data['userId'];
+        if (Objects.isNotBlank(Objects.safeGet<String>(data, 'accessToken')) &&
+            Objects.isNotBlank(Objects.safeGet<String>(data, 'userId'))) {
+          token.value = Objects.safeGet<String>(data, 'accessToken') ?? '';
+          userId.value = Objects.safeGet<String>(data, 'userId') ?? '';
           startConnect();
           return true;
         }
         return false;
       }, errorMessage: '登录失败');
     } catch (e, st) {
-      _logError('登录异常: $e\n$st');
+      _showError('登录异常', silent: false);
       return false;
     }
   }
@@ -151,7 +150,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
       await _secureStorage.delete(key: _keyToken);
       await _storage.remove(_keyUserId);
     } catch (e) {
-      _logError('登出失败: $e');
+      _showError('登出失败: $e');
     }
   }
 
@@ -161,12 +160,12 @@ class UserController extends GetxController with WidgetsBindingObserver {
     await getUserInfo();
     // 连接 WebSocket
     connectWebSocket();
-    // 更新通讯录
-    await _contactController.fetchContacts();
-    // 更新未处理请求
-    await _contactController.fetchFriendRequests();
-    // 获取会话列表
-    await _chatController.fetchChats();
+    // 并行获取各类数据以加快启动速度
+    await Future.wait([
+      _contactController.fetchContacts(),
+      _contactController.fetchFriendRequests(),
+      _chatController.fetchChats(),
+    ]);
     // 获取消息（会读取本地或远端）
     _chatController.fetchMessages();
   }
@@ -198,7 +197,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
         },
         onMessage: _handleWebSocketMessage,
         onError: (error) {
-          _logError('WebSocket 错误: $error');
+          _showError('WebSocket 错误: $error');
           _connecting = false;
         },
         uid: userId.value,
@@ -206,7 +205,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
       );
     } catch (e, st) {
       _connecting = false;
-      _logError('connectWebSocket 发生异常: $e\n$st');
+      _showError('connectWebSocket 发生异常: $e\n$st');
       // 触发重连策略
       reconnectWebSocket();
     }
@@ -236,7 +235,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
         connectWebSocket();
         await _chatController.fetchMessages();
       } catch (e, st) {
-        _logError('重连尝试失败: $e\n$st');
+        _showError('重连尝试失败: $e\n$st');
       } finally {
         // 允许下一次重连（如果仍然需要）
         _reconnectLock = false;
@@ -249,7 +248,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
     try {
       final message = _safeDecodeJson(rawData);
       if (message == null) {
-        _logError('无法解析的 WebSocket 消息: $rawData');
+        _showError('无法解析的 WebSocket 消息: $rawData');
         return;
       }
 
@@ -274,7 +273,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
           Get.log('未知的 WebSocket 消息类型: $code');
       }
     } catch (e, st) {
-      _logError('处理 WebSocket 消息出错: $e\n$st');
+      _showError('处理 WebSocket 消息出错: $e\n$st');
     }
   }
 
@@ -282,13 +281,13 @@ class UserController extends GetxController with WidgetsBindingObserver {
   void _processChatMessage(dynamic data) {
     try {
       if (data == null) {
-        _logError('_processChatMessage: data 为 null');
+        _showError('_processChatMessage: data 为 null');
         return;
       }
       final IMessage parsedMessage = IMessage.fromJson(data);
       final String? chatId = _deriveChatIdFromMessage(parsedMessage);
       if (chatId == null) {
-        _logError('无法从消息推断 chatId: ${parsedMessage.toJson()}');
+        _showError('无法从消息推断 chatId: ${parsedMessage.toJson()}');
         return;
       }
 
@@ -296,7 +295,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
       Get.log(
           'WebSocket ${parsedMessage.messageType == IMessageType.singleMessage.code ? '单聊' : '群聊'}消息接收: ${parsedMessage.messageId ?? 'unknown id'}');
     } catch (e, st) {
-      _logError('_processChatMessage 异常: $e\n$st');
+      _showError('_processChatMessage 异常: $e\n$st');
     }
   }
 
@@ -304,14 +303,14 @@ class UserController extends GetxController with WidgetsBindingObserver {
   void _processVideoMessage(dynamic data) {
     try {
       if (data == null) {
-        _logError('_processVideoMessage: data 为 null');
+        _showError('_processVideoMessage: data 为 null');
         return;
       }
       final parsedMessage = MessageVideoCallDto.fromJson(data);
       _chatController.handleCallMessage(parsedMessage);
       Get.log('WebSocket 视频消息接收: ${parsedMessage.fromId ?? 'unknown'}');
     } catch (e, st) {
-      _logError('_processVideoMessage 异常: $e\n$st');
+      _showError('_processVideoMessage 异常: $e\n$st');
     }
   }
 
@@ -331,7 +330,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
       }
       return null;
     } catch (e) {
-      _logError('推断 chatId 失败: $e');
+      _showError('推断 chatId 失败: $e');
       return null;
     }
   }
@@ -344,7 +343,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
       final response = await _apiService.sendSms({'phone': phone});
       _handleApiResponse(response, onSuccess: (_) {}, errorMessage: '发送验证码失败');
     } catch (e, st) {
-      _logError('发送验证码失败: $e\n$st');
+      _showError('发送验证码失败: $e\n$st');
       rethrow;
     }
   }
@@ -371,11 +370,11 @@ class UserController extends GetxController with WidgetsBindingObserver {
     try {
       final response = await _apiService.getPublicKey();
       _handleApiResponse(response, onSuccess: (data) {
-        publicKey = data['publicKey'] ?? '';
+        publicKey = Objects.safeGet<String>(data, 'publicKey') ?? '';
         Get.log('✅ 获取公钥成功: ${publicKey.isNotEmpty ? '[RECEIVED]' : '[EMPTY]'}');
       }, errorMessage: '获取公钥失败');
     } catch (e, st) {
-      _logError('获取公钥失败: $e\n$st');
+      _showError('获取公钥失败: $e\n$st');
     } finally {
       _gettingPublicKey = false;
     }
@@ -403,7 +402,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
       final response = await _apiService.uploadImage(formData);
       return response?['path'] as String?;
     } catch (e, st) {
-      _logError('上传图片失败: $e\n$st');
+      _showError('上传图片失败: $e\n$st');
       rethrow;
     }
   }
@@ -418,7 +417,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
         Get.snackbar('成功', '资料已更新', snackPosition: SnackPosition.TOP);
       }, errorMessage: '更新用户信息失败');
     } catch (e, st) {
-      _logError('更新用户信息失败: $e\n$st');
+      _showError('更新用户信息失败: $e\n$st');
       rethrow;
     }
   }
@@ -432,7 +431,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
         Get.log('✅ 获取用户信息成功');
       }, errorMessage: '获取用户信息失败');
     } catch (e, st) {
-      _logError('获取用户信息失败: $e\n$st');
+      _showError('获取用户信息失败: $e\n$st');
       rethrow;
     }
   }
@@ -445,10 +444,10 @@ class UserController extends GetxController with WidgetsBindingObserver {
         'userId': userId.value,
       });
       return _handleApiResponse(response, onSuccess: (data) {
-        return data['status'] == _qrAuthorizedCode;
+        return Objects.safeGet<String>(data, 'status') == _qrAuthorizedCode;
       }, errorMessage: '扫描二维码失败');
     } catch (e, st) {
-      _logError('扫描二维码异常: $e\n$st');
+      _showError('扫描二维码异常', silent: false);
       return false;
     }
   }
@@ -461,12 +460,13 @@ class UserController extends GetxController with WidgetsBindingObserver {
       final storedToken = await _secureStorage.read(key: _keyToken);
       final storedUserId = _storage.read(_keyUserId);
 
-      if (storedToken != null && storedToken.isNotEmpty) token.value = storedToken;
+      if (storedToken != null && storedToken.isNotEmpty)
+        token.value = storedToken;
       if (storedUserId != null && storedUserId.toString().isNotEmpty) {
         userId.value = storedUserId.toString();
       }
     } catch (e, st) {
-      _logError('加载存储数据失败: $e\n$st');
+      _showError('加载存储数据失败: $e\n$st');
     }
   }
 
@@ -479,7 +479,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
         _storage.write(_keyUserId, userId.value);
       }
     } catch (e) {
-      _logError('保存 userId 失败: $e');
+      _showError('保存 userId 失败: $e');
     }
   }
 
@@ -492,7 +492,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
         await _secureStorage.write(key: _keyToken, value: token.value);
       }
     } catch (e) {
-      _logError('保存令牌失败: $e');
+      _showError('保存令牌失败: $e');
     }
   }
 
@@ -513,7 +513,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
       await _saveToken();
       _checkAuth();
     } catch (e) {
-      _logError('处理 token 变更失败: $e');
+      _showError('处理 token 变更失败: $e');
     }
   }
 
@@ -530,15 +530,17 @@ class UserController extends GetxController with WidgetsBindingObserver {
 
   /// 统一处理 API 返回值（成功调用 onSuccess，否则抛异常）
   T _handleApiResponse<T>(
-      Map<String, dynamic>? response, {
-        required T Function(dynamic) onSuccess,
-        required String errorMessage,
-      }) {
-    if (response != null && response['code'] == _successCode) {
-      return onSuccess(response['data']);
+    Map<String, dynamic>? response, {
+    required T Function(dynamic) onSuccess,
+    required String errorMessage,
+  }) {
+    // 使用工具类安全获取字段，避免空指针
+    final code = Objects.safeGet<int>(response, 'code');
+    if (code == _successCode) {
+      return onSuccess(response?['data']);
     }
-    final msg = response?['message'] ?? errorMessage;
-    throw Exception(msg);
+    final msg = Objects.safeGet<String>(response, 'message', errorMessage);
+    throw BusinessException(msg.toString());
   }
 
   /// 安全解析 JSON（支持 raw String / Map / 其它），解析失败返回 null
@@ -555,13 +557,13 @@ class UserController extends GetxController with WidgetsBindingObserver {
         return Map<String, dynamic>.from(raw as Map);
       }
     } catch (e) {
-      _logError('JSON 解析失败: $e -- 原始: $raw');
+      _showError('JSON 解析失败: $e -- 原始: $raw');
     }
     return null;
   }
 
-  /// 统一记录错误日志（目前简单输出到 Get.log，后续可扩展到上报）
-  void _logError(String message) {
-    Get.log(message);
+  /// 显示错误提示
+  void _showError(dynamic error, {bool silent = false}) {
+    ErrorHandler.handle(error, silent: silent);
   }
 }

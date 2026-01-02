@@ -3,11 +3,12 @@ import 'dart:io';
 
 import 'package:dio/dio.dart' as dio;
 import 'package:dio/io.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_im/exceptions/app_exception.dart';
 import 'package:get/get.dart';
 
 import '../../config/app_config.dart';
 import '../controller/user_controller.dart';
+
 
 /// HTTP 请求服务类，基于 Dio 封装，提供统一的网络请求功能
 class HttpService extends GetxService {
@@ -32,8 +33,8 @@ class HttpService extends GetxService {
 
     // 仅在调试模式下启用忽略 SSL 证书验证（用于抓包调试）
     if (AppConfig.debug) {
-      (_dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate =
-          (client) {
+      (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+        final client = HttpClient();
         client.badCertificateCallback =
             (X509Certificate cert, String host, int port) => true;
         return client;
@@ -62,82 +63,74 @@ class HttpService extends GetxService {
       },
       onError: (dio.DioException e, handler) {
         Get.log('❌ 请求错误: ${e.message} [${e.requestOptions.uri}]');
-        _handleDioError(e);
+        // 这里不再直接处理错误，而是交给调用方或上层逻辑捕获
         return handler.next(e);
       },
     ));
   }
 
-  /// 发送 GET 请求
-  ///
-  /// [path] 请求路径
-  /// [params] 查询参数（可选）
-  /// 返回: 解析后的 JSON 数据（Map<String, dynamic>）或 null（失败时）
-  Future<Map<String, dynamic>?> get(String path,
-      {Map<String, dynamic>? params}) async {
+  /// 通用请求方法，封装 GET 和 POST 请求逻辑
+  /// 发生错误时会抛出 [AppException] 及其子类
+  Future<Map<String, dynamic>?> _request(
+    String path, {
+    String method = 'GET',
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
     try {
-      final response = await _dio.get(path, queryParameters: params);
-      return _processResponse(response);
+      final response = await _dio.request(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: dio.Options(method: method),
+      );
+      final result = _processResponse(response);
+      if (result is Map) {
+        return Map<String, dynamic>.from(result);
+      }
+      // 如果期望是 Map 但返回了 null 或其他类型，且状态码成功，可能需要根据业务逻辑判断
+      // 这里暂时允许返回 null (例如 204 No Content)
+      if (result == null) return null;
+
+      Get.log('⚠️ $method 请求返回了非 Map 类型数据: $path - ${result.runtimeType}');
+      return null;
     } on dio.DioException catch (e) {
-      Get.log('❌ GET 请求失败: $path - ${e.message}');
-      _handleDioError(e);
-      return null;
+      throw NetworkException.fromDioError(e);
     } catch (e) {
-      Get.log('❌ GET 请求异常: $path - $e');
-      return null;
+      if (e is AppException) rethrow;
+      throw AppException('请求发生未知异常', details: e);
     }
+  }
+
+  /// 发送 GET 请求
+  Future<Map<String, dynamic>?> get(String path,
+      {Map<String, dynamic>? params}) {
+    return _request(path, method: 'GET', queryParameters: params);
   }
 
   /// 发送 POST 请求
-  ///
-  /// [path] 请求路径
-  /// [data] 请求体数据（可选）
-  /// 返回: 解析后的 JSON 数据（Map<String, dynamic>）或 null（失败时）
-  Future<Map<String, dynamic>?> post(String path, {dynamic data}) async {
-    try {
-      final response = await _dio.post(path, data: data);
-      return _processResponse(response);
-    } on dio.DioException catch (e) {
-      Get.log('❌ POST 请求失败: $path - ${e.message}');
-      _handleDioError(e);
-      return null;
-    } catch (e) {
-      Get.log('❌ POST 请求异常: $path - $e');
-      return null;
-    }
+  Future<Map<String, dynamic>?> post(String path, {dynamic data}) {
+    return _request(path, method: 'POST', data: data);
   }
 
   /// 处理 HTTP 响应数据
-  ///
-  /// [response] Dio 响应对象
-  /// 返回: 解析后的 Map 数据；失败时抛出 DioException
-  static Map<String, dynamic>? _processResponse(dio.Response response) {
+  static dynamic _processResponse(dio.Response response) {
     if (response.statusCode == 200 || response.statusCode == 201) {
       final data = response.data;
-      return data is String ? jsonDecode(data) : data as Map<String, dynamic>?;
+      if (data is String) {
+        try {
+          return jsonDecode(data);
+        } catch (_) {
+          return data;
+        }
+      }
+      return data;
     }
-    // 非成功状态码，抛出异常以触发拦截器错误处理
+    // 非成功状态码，抛出异常
     throw dio.DioException(
       requestOptions: response.requestOptions,
       response: response,
       type: dio.DioExceptionType.badResponse,
     );
-  }
-
-  /// 处理 Dio 异常，提供分类日志输出
-  ///
-  /// [error] DioException 对象
-  void _handleDioError(dio.DioException error) {
-    final message = switch (error.type) {
-      dio.DioExceptionType.connectionTimeout => '⏳ 连接超时',
-      dio.DioExceptionType.sendTimeout => '🚀 发送数据超时',
-      dio.DioExceptionType.receiveTimeout => '⚠️ 接收数据超时',
-      dio.DioExceptionType.badResponse =>
-        '❌ 服务器错误: ${error.response?.statusCode}',
-      dio.DioExceptionType.cancel => '❎ 请求被取消',
-      dio.DioExceptionType.unknown => '🤷 未知网络错误: ${error.message}',
-      _ => '🛑 其他错误: ${error.message}',
-    };
-    Get.log(message);
   }
 }

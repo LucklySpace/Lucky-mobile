@@ -5,7 +5,8 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
-import 'http_service.dart';
+import 'package:flutter_im/exceptions/app_exception.dart';
+import '../services/http_service.dart';
 
 /// **🌐 统一 API 服务**
 class ApiService extends HttpService {
@@ -196,6 +197,80 @@ class ApiService extends HttpService {
   }
 
   // ====================================
+  // 💰 钱包 / 支付相关 API
+  // ====================================
+
+  /// 创建钱包
+  Future<Map<String, dynamic>?> createWallet(Map<String, dynamic> data) {
+    return post('/wallet/api/wallet/create', data: data);
+  }
+
+  /// 为用户创建钱包
+  Future<Map<String, dynamic>?> createUserWallet(String userId) {
+    return post('/wallet/api/wallet/user/$userId/create');
+  }
+
+  /// 获取钱包信息（按地址）
+  Future<Map<String, dynamic>?> getWalletByAddress(String address) {
+    return get('/wallet/api/wallet/$address');
+  }
+
+  /// 获取钱包信息（按用户）
+  Future<Map<String, dynamic>?> getWalletByUser(String userId) {
+    return get('/wallet/api/wallet/user/$userId');
+  }
+
+  /// 获取交易历史（按地址）
+  Future<Map<String, dynamic>?> getTransactionsByAddress(
+      String address, int page, int size) {
+    return get('/wallet/api/wallet/$address/history',
+        params: {'page': page, 'size': size});
+  }
+
+  /// 获取交易历史（按用户）
+  Future<Map<String, dynamic>?> getTransactionsByUser(
+      String userId, int page, int size) {
+    return get('/wallet/api/wallet/user/$userId/history',
+        params: {'page': page, 'size': size});
+  }
+
+  /// 获取手续费
+  Future<Map<String, dynamic>?> fee() {
+    return get('/wallet/api/payment/fee');
+  }
+
+  /// 直接付款
+  Future<Map<String, dynamic>?> pay(Map<String, dynamic> data) {
+    return post('/wallet/api/payment/pay', data: data);
+  }
+
+  /// 发起转账
+  Future<Map<String, dynamic>?> transfer(Map<String, dynamic> data) {
+    return post('/wallet/api/payment/transfer', data: data);
+  }
+
+  /// 确认收款
+  Future<Map<String, dynamic>?> confirmPayment(
+      String txId, String receiverAddress) {
+    return post('/wallet/api/payment/confirm',
+        data: {'txId': txId, 'receiverAddress': receiverAddress});
+  }
+
+  /// 退回转账
+  Future<Map<String, dynamic>?> returnPayment(
+      String txId, String receiverAddress) {
+    return post('/wallet/api/payment/return',
+        data: {'txId': txId, 'receiverAddress': receiverAddress});
+  }
+
+  /// 取消转账
+  Future<Map<String, dynamic>?> cancelPayment(
+      String txId, String senderAddress) {
+    return post('/wallet/api/payment/cancel',
+        data: {'txId': txId, 'senderAddress': senderAddress});
+  }
+
+  // ====================================
   // 📂 文件相关 API
   // ====================================
 
@@ -222,51 +297,54 @@ class ApiService extends HttpService {
 // ====================================
 
   /// webrtc 获取 远程 answer
-  Future webRtcHandshake(String url, String webrtcUrl, String sdp,
-      {type = 'play'}) async {
-    Dio dio = Dio();
+  Future<RTCSessionDescription> webRtcHandshake(
+      String baseUrl, String webrtcUrl, String sdp,
+      {String type = 'play'}) async {
+    final dioInstance = Dio();
     // 拼接url
-    url = type == 'publish' ? '$url/rtc/v1/publish/' : '$url/rtc/v1/play/';
+    final url = type == 'publish'
+        ? '$baseUrl/rtc/v1/publish/'
+        : '$baseUrl/rtc/v1/play/';
 
-    Map data = {
+    final Map<String, dynamic> data = {
       'api': url,
       'streamurl': webrtcUrl,
       'sdp': sdp,
-      'tid': "2b45a06"
+      'tid': "2b45a06" // 需确认此 ID 用途，建议参数化
     };
 
     try {
-      (dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate =
-          (client) {
+      (dioInstance.httpClientAdapter as IOHttpClientAdapter).createHttpClient =
+          () {
+        final client = HttpClient();
         client.badCertificateCallback =
             (X509Certificate cert, String host, int port) => true;
         return client;
       };
 
-      dio.options.headers['Content-Type'] = 'application/json';
-      dio.options.headers['Connection'] = 'close';
-      dio.options.responseType = ResponseType.plain;
+      dioInstance.options.headers['Content-Type'] = 'application/json';
+      dioInstance.options.headers['Connection'] = 'close';
+      dioInstance.options.responseType = ResponseType.plain;
 
-      Response response =
-          await dio.post(url, data: utf8.encode(json.encode(data)));
+      final response = await dioInstance.post(url, data: jsonEncode(data));
 
       if (response.statusCode == 200) {
-        Map<String, dynamic> o = json.decode(response.data);
+        final Map<String, dynamic> o = jsonDecode(response.data);
         if (!o.containsKey('code') || !o.containsKey('sdp') || o['code'] != 0) {
           if (o['code'] == 400) {
-            // ToastUtils.showToast("错误 当前已有人在推流");
+            throw BusinessException("当前已有人在推流", code: 400);
           }
-          return Future.error(response.data);
+          throw BusinessException('WebRTC handshake failed: ${response.data}');
         }
-        return Future.value(RTCSessionDescription(o['sdp'], 'answer'));
+        return RTCSessionDescription(o['sdp'], 'answer');
       } else {
-        // ToastUtils.showToast("直播服务认证失败", type: 'error');
-        return Future.error('请求推流服务器信令验证失败 status: ${response.statusCode}');
+        throw NetworkException('请求推流服务器信令验证失败', code: response.statusCode);
       }
     } catch (err) {
-      // ToastUtils.showToast("直播服务认证失败$err", type: 'error');
-      print('获取 webrtc sdp 报错$err');
-      throw Error();
+      if (err is AppException) rethrow;
+      throw NetworkException('获取 webrtc sdp 失败', details: err);
+    } finally {
+      dioInstance.close();
     }
   }
 }

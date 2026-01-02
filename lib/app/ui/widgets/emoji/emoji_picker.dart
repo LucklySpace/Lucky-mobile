@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:get_storage/get_storage.dart';
 
 import '../../../../config/app_config.dart';
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../../utils/file.dart';
 import '../../../models/expression_pack.dart';
 
@@ -34,11 +36,11 @@ class _EmojiPickerState extends State<EmojiPicker> {
   static const _maxRecentEmojis = 8; // 最近使用表情最大数量
   static const _emojiColumns = 8; // Emoji 网格每行数量
   static const _imageColumns = 4; // 图片网格每行数量
-  static const _gridPadding = EdgeInsets.all(8.0); // 网格内边距
-  static const _tabBarHeight = 36.0; // TabBar 高度
+  static const _gridPadding = EdgeInsets.all(AppSizes.spacing8); // 网格内边距
+  static const _tabBarHeight = AppSizes.spacing36; // TabBar 高度
   static const _deleteButtonSize = 80.0; // 删除按钮区域大小
-  static const _iconSize = 20.0; // 删除按钮图标大小
-  static const _sectionHeaderFontSize = 12.0; // 部分标题字体大小
+  static const _iconSize = AppSizes.iconMedium; // 删除按钮图标大小
+  static const _sectionHeaderFontSize = AppSizes.font12; // 部分标题字体大小
 
   // 数据存储
   final _storage = GetStorage();
@@ -81,12 +83,15 @@ class _EmojiPickerState extends State<EmojiPicker> {
     return SizedBox(
       height: _tabBarHeight,
       child: TabBar(
-        labelColor: Theme.of(context).primaryColor,
-        unselectedLabelColor: Colors.grey,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textSecondary,
         indicatorWeight: 2,
         labelPadding: EdgeInsets.zero,
         tabs: _expressionPacks.isEmpty
-            ? [const Tab(child: Icon(Icons.emoji_emotions, size: 18))]
+            ? [
+                const Tab(
+                    child: Icon(Icons.emoji_emotions, size: AppSizes.font18))
+              ]
             : List.generate(
                 _expressionPacks.length, (index) => _buildTab(index)),
       ),
@@ -98,7 +103,7 @@ class _EmojiPickerState extends State<EmojiPicker> {
     if (_expressionPacks.isEmpty) {
       return const Center(
         child: Padding(
-          padding: EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(AppSizes.spacing16),
           child: Text('正在加载表情...'),
         ),
       );
@@ -124,8 +129,8 @@ class _EmojiPickerState extends State<EmojiPicker> {
             center: const Alignment(0.7, 0.7),
             radius: 1.2,
             colors: [
-              Colors.white.withOpacity(0.9),
-              Colors.white.withOpacity(0.0)
+              AppColors.surface.withOpacity(0.9),
+              AppColors.surface.withOpacity(0.0)
             ],
           ),
         ),
@@ -135,15 +140,15 @@ class _EmojiPickerState extends State<EmojiPicker> {
             color: Colors.transparent,
             child: InkWell(
               onTap: widget.onDelete,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(AppSizes.radius24),
               child: Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(AppSizes.spacing8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  borderRadius: BorderRadius.circular(24),
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(AppSizes.radius24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: AppColors.shadow,
                       blurRadius: 4,
                       offset: const Offset(0, 1),
                     ),
@@ -151,7 +156,7 @@ class _EmojiPickerState extends State<EmojiPicker> {
                 ),
                 child: const Icon(
                   Icons.backspace_rounded,
-                  color: Colors.white,
+                  color: AppColors.textWhite,
                   size: _iconSize,
                 ),
               ),
@@ -169,26 +174,27 @@ class _EmojiPickerState extends State<EmojiPicker> {
       final emoji = pack.expressions.isNotEmpty
           ? pack.expressions.first.unicode ?? '😀'
           : '😀';
-      return Tab(child: Text(emoji, style: const TextStyle(fontSize: 18)));
+      return Tab(
+          child: Text(emoji, style: const TextStyle(fontSize: AppSizes.font18)));
     }
     final imagePath =
         pack.expressions.isNotEmpty ? pack.expressions.first.imageURL : null;
     return Tab(
       child: imagePath != null
           ? SizedBox(
-              width: 24,
-              height: 24,
+              width: AppSizes.spacing24,
+              height: AppSizes.spacing24,
               child: Image.file(
                 File(imagePath),
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) {
                   _logError('加载图片表情失败: $error, 路径: $imagePath');
                   return const Icon(Icons.error_outline,
-                      color: Colors.grey, size: 24);
+                      color: AppColors.textSecondary, size: AppSizes.font24);
                 },
               ),
             )
-          : const Icon(Icons.image, size: 18),
+          : const Icon(Icons.image, size: AppSizes.font18),
     );
   }
 
@@ -279,7 +285,7 @@ class _EmojiPickerState extends State<EmojiPicker> {
       behavior: HitTestBehavior.opaque,
       child: Center(
           child:
-              Text(expression.unicode!, style: const TextStyle(fontSize: 24))),
+              Text(expression.unicode!, style: const TextStyle(fontSize: AppSizes.font24))),
     );
   }
 
@@ -293,14 +299,14 @@ class _EmojiPickerState extends State<EmojiPicker> {
       onTap: () => _onEmojiTap(expression, ExpressionType.image),
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.all(AppSizes.spacing4),
         child: Image.file(
           File(expression.imageURL!),
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) {
             _logError('加载图片表情失败: $error, 路径: ${expression.imageURL}');
             return const Icon(Icons.error_outline,
-                color: Colors.grey, size: 24);
+                color: AppColors.textHint, size: AppSizes.iconMedium);
           },
         ),
       ),

@@ -1,6 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
+
 class UserAvatarName extends StatelessWidget {
   final String? avatar;
   final String? name;
@@ -13,8 +16,8 @@ class UserAvatarName extends StatelessWidget {
     this.avatar,
     this.name,
     this.onTap,
-    this.avatarSize = 40,
-    this.borderRadius = 6,
+    this.avatarSize = AppSizes.spacing40,
+    this.borderRadius = AppSizes.radius8,
   }) : super(key: key);
 
   @override
@@ -25,7 +28,7 @@ class UserAvatarName extends StatelessWidget {
         height: avatarSize,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(borderRadius),
-          color: Colors.grey[200],
+          color: AppColors.background,
         ),
         clipBehavior: Clip.hardEdge,
         child: avatar != null
@@ -34,18 +37,27 @@ class UserAvatarName extends StatelessWidget {
                 fit: BoxFit.cover,
                 placeholder: (context, url) => const Center(
                   child: SizedBox(
-                    width: 20,
-                    height: 20,
+                    width: AppSizes.spacing20,
+                    height: AppSizes.spacing20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                     ),
                   ),
                 ),
-                errorWidget: (context, url, error) => const Icon(Icons.person),
+                errorWidget: (context, url, error) => const Icon(
+                  Icons.person,
+                  color: AppColors.textHint,
+                ),
               )
-            : const Icon(Icons.person),
+            : const Icon(
+                Icons.person,
+                color: AppColors.textHint,
+              ),
       ),
-      title: Text(name ?? ''),
+      title: Text(
+        name ?? '',
+        style: const TextStyle(color: AppColors.textPrimary),
+      ),
       onTap: onTap,
     );
   }

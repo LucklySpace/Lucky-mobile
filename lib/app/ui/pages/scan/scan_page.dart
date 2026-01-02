@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_constant.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../../utils/audio.dart';
 import 'login_authorization_page.dart';
@@ -24,13 +26,13 @@ class ScanPage extends StatefulWidget {
 class _ScanPageState extends State<ScanPage>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   // 常量定义
-  static const _scanAreaSize = 250.0; // 扫描区域尺寸
-  static const _cornerSize = 30.0; // 扫描框角尺寸
-  static const _cornerBorderWidth = 4.0; // 扫描框角边框宽度
+  static const _scanAreaSize = AppSizes.spacing250; // 扫描区域尺寸
+  static const _cornerSize = AppSizes.spacing30; // 扫描框角尺寸
+  static const _cornerBorderWidth = AppSizes.spacing4; // 扫描框角边框宽度
   static const _animationDuration = Duration(seconds: 2); // 扫描线动画时长
   static const _audioPath = 'audio/beep.mp3'; // 扫码音效路径
-  static const _iconSize = 24.0; // 返回按钮图标尺寸
-  static const _torchIconSize = 40.0; // 闪光灯图标尺寸
+  static const _iconSize = AppSizes.iconMedium; // 返回按钮图标尺寸
+  static const _torchIconSize = AppSizes.spacing40; // 闪光灯图标尺寸
 
   final MobileScannerController _controller = MobileScannerController();
   bool _isTorchOn = false; // 闪光灯状态
@@ -103,6 +105,7 @@ class _ScanPageState extends State<ScanPage>
     var handlers = {
       AppConstants.LOGIN_QRCODE_PREFIX: _handleLoginQRCode,
       AppConstants.FRIEND_PROFILE_PREFIX: _handleFriendProfileQRCode,
+      AppConstants.WALLET_ADDRESS_PREFIX: _handleWalletAddressQRCode,
     };
 
     // 检查是否为 URL 或特定前缀
@@ -140,6 +143,28 @@ class _ScanPageState extends State<ScanPage>
         arguments: {'userId': userId});
   }
 
+  /// 处理钱包地址二维码
+  void _handleWalletAddressQRCode(String code) {
+    // 解析地址和金额
+    // 格式可能为: address&amount=xxx
+    String address = code;
+    String? amount;
+
+    if (code.contains('&amount=')) {
+      final parts = code.split('&amount=');
+      if (parts.isNotEmpty) {
+        address = parts[0];
+        if (parts.length > 1) {
+          amount = parts[1];
+        }
+      }
+    }
+
+    // 导航到支付页面，并传递地址参数
+    _navigateTo('${Routes.HOME}${Routes.PAYMENT}',
+        arguments: {'toAddress': address, 'amount': amount});
+  }
+
   /// 页面跳转并处理返回
   Future<void> _navigateTo(String route,
       {Map<String, dynamic>? arguments}) async {
@@ -153,9 +178,9 @@ class _ScanPageState extends State<ScanPage>
   }
 
   /// 跳转到指定页面
-  Future<void> _navigateToWidget(Widget page) async {
+  Future<void> _navigateToWidget(Widget page, {dynamic arguments}) async {
     try {
-      await Get.to(() => page);
+      await Get.to(() => page, arguments: arguments);
       if (mounted) _controller.start();
     } catch (err) {
       debugPrint('❌ 页面跳转失败: $err');
@@ -178,11 +203,11 @@ class _ScanPageState extends State<ScanPage>
 
           /// 返回按钮
           Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            left: 16,
+            top: MediaQuery.of(context).padding.top + AppSizes.spacing10,
+            left: AppSizes.spacing16,
             child: IconButton(
               icon:
-                  const Icon(Icons.close, color: Colors.white, size: _iconSize),
+                  const Icon(Icons.close, color: AppColors.textWhite, size: _iconSize),
               onPressed: Get.back,
             ),
           ),
@@ -192,7 +217,7 @@ class _ScanPageState extends State<ScanPage>
 
           /// 闪光灯按钮
           Positioned(
-            top: screenHeight / 2 + 140,
+            top: screenHeight / 2 + AppSizes.spacing140,
             left: 0,
             right: 0,
             child: Center(
@@ -200,7 +225,7 @@ class _ScanPageState extends State<ScanPage>
                 iconSize: _torchIconSize,
                 icon: Icon(
                   _isTorchOn ? Icons.flash_on : Icons.flash_off,
-                  color: _isTorchOn ? Colors.amber[400] : Colors.white,
+                  color: _isTorchOn ? AppColors.warning : AppColors.textWhite,
                 ),
                 onPressed: () {
                   setState(() {
@@ -230,18 +255,18 @@ class _ScanPageState extends State<ScanPage>
             return Positioned(
               top: _animationController.value * _scanAreaSize,
               child: Container(
-                width: _scanAreaSize - 20,
-                height: 2,
-                decoration: BoxDecoration(
+              width: _scanAreaSize - AppSizes.spacing20,
+              height: AppSizes.spacing2,
+              decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      Colors.green.withOpacity(0),
-                      Colors.green.withOpacity(0.5),
-                      Colors.green,
-                      Colors.green.withOpacity(0.5),
-                      Colors.green.withOpacity(0),
+                      AppColors.success.withOpacity(0),
+                      AppColors.success.withOpacity(0.5),
+                      AppColors.success,
+                      AppColors.success.withOpacity(0.5),
+                      AppColors.success.withOpacity(0),
                     ],
                   ),
                 ),
@@ -293,16 +318,16 @@ class _ScanPageState extends State<ScanPage>
       decoration: BoxDecoration(
         border: Border(
           left: left
-              ? const BorderSide(color: Colors.green, width: _cornerBorderWidth)
+              ? const BorderSide(color: AppColors.success, width: _cornerBorderWidth)
               : BorderSide.none,
           right: right
-              ? const BorderSide(color: Colors.green, width: _cornerBorderWidth)
+              ? const BorderSide(color: AppColors.success, width: _cornerBorderWidth)
               : BorderSide.none,
           top: top
-              ? const BorderSide(color: Colors.green, width: _cornerBorderWidth)
+              ? const BorderSide(color: AppColors.success, width: _cornerBorderWidth)
               : BorderSide.none,
           bottom: bottom
-              ? const BorderSide(color: Colors.green, width: _cornerBorderWidth)
+              ? const BorderSide(color: AppColors.success, width: _cornerBorderWidth)
               : BorderSide.none,
         ),
       ),

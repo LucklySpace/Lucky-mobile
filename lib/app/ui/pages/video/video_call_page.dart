@@ -8,10 +8,12 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../../config/app_config.dart';
+import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_message.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../api/api_service.dart';
-import '../../../api/event_bus_service.dart';
 import '../../../controller/webrtc_controller.dart';
+import '../../../services/event_bus_service.dart';
 
 /// 视频通话页面
 /// 实现了一对一视频通话功能，包括本地预览、远程视频显示、摄像头切换和音频控制等功能
@@ -95,7 +97,7 @@ class _VideoCallPageState extends State<VideoCallPage>
 
   void _handleCallTermination(String message) {
     Get.snackbar('提示', message,
-        backgroundColor: Colors.white, duration: const Duration(seconds: 2));
+        backgroundColor: AppColors.surface, duration: const Duration(seconds: 2));
   }
 
   Future<void> _startRemoteStream() async {
@@ -106,7 +108,7 @@ class _VideoCallPageState extends State<VideoCallPage>
         callback: (bool res) {
           if (!res) {
             Get.snackbar('提示', '远程视频连接失败',
-                backgroundColor: Colors.white,
+                backgroundColor: AppColors.surface,
                 duration: const Duration(seconds: 2));
           }
         },
@@ -129,7 +131,7 @@ class _VideoCallPageState extends State<VideoCallPage>
 
       if (!cameraStatus.isGranted || !micStatus.isGranted) {
         Get.snackbar('权限提示', '需要相机和麦克风权限才能进行视频通话',
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
             duration: const Duration(seconds: 2));
         Get.back();
         return;
@@ -144,7 +146,7 @@ class _VideoCallPageState extends State<VideoCallPage>
         callback: (bool res) {
           if (!res) {
             Get.snackbar('提示', '开启本地视频失败',
-                backgroundColor: Colors.white,
+                backgroundColor: AppColors.surface,
                 duration: const Duration(seconds: 2));
           }
         },
@@ -159,7 +161,7 @@ class _VideoCallPageState extends State<VideoCallPage>
     } catch (e) {
       Get.log('初始化视频失败: $e');
       Get.snackbar('错误', '视频初始化失败',
-          backgroundColor: Colors.white, duration: const Duration(seconds: 2));
+          backgroundColor: AppColors.surface, duration: const Duration(seconds: 2));
     }
   }
 
@@ -224,7 +226,7 @@ class _VideoCallPageState extends State<VideoCallPage>
         return true;
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.black,
         body: SafeArea(
           top: false,
           bottom: false,
@@ -263,9 +265,9 @@ class _VideoCallPageState extends State<VideoCallPage>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Colors.white),
-          SizedBox(height: 16),
-          Text('正在启动摄像头...', style: TextStyle(color: Colors.white)),
+          CircularProgressIndicator(color: AppColors.textWhite),
+          SizedBox(height: AppSizes.spacing16),
+          Text('正在启动摄像头...', style: TextStyle(color: AppColors.textWhite)),
         ],
       ),
     );
@@ -274,18 +276,18 @@ class _VideoCallPageState extends State<VideoCallPage>
   /// 构建远程视频窗口（右上角小窗）
   Widget _buildRemoteVideoWindow() {
     return Positioned(
-      top: 40,
-      right: 20,
+      top: AppSizes.spacing40,
+      right: AppSizes.spacing20,
       child: Container(
-        width: 120,
-        height: 160,
+        width: AppSizes.spacing120,
+        height: AppSizes.spacing160,
         decoration: BoxDecoration(
-          color: Colors.black54,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white30),
+          color: AppColors.mask,
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+          border: Border.all(color: AppColors.textWhite.withOpacity(0.3)),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
           child: _buildRemoteVideoPreview(),
         ),
       ),
@@ -299,7 +301,7 @@ class _VideoCallPageState extends State<VideoCallPage>
         return const Center(
           child: Text(
             '等待连接...',
-            style: TextStyle(color: Colors.white, fontSize: 12),
+            style: TextStyle(color: AppColors.textWhite, fontSize: AppSizes.font12),
           ),
         );
       }
@@ -316,12 +318,12 @@ class _VideoCallPageState extends State<VideoCallPage>
   /// 构建底部控制按钮
   Widget _buildControlButtons() {
     return Positioned(
-      bottom: 50,
+      bottom: AppSizes.spacing50,
       left: 0,
       right: 0,
       child: Container(
-        height: 80,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        height: AppSizes.spacing80,
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing20),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -331,10 +333,10 @@ class _VideoCallPageState extends State<VideoCallPage>
             ),
             _buildControlButton(
               icon: Icons.call_end,
-              backgroundColor: Colors.red,
-              iconColor: Colors.white,
-              size: 35,
-              iconSize: 32,
+              backgroundColor: AppColors.error,
+              iconColor: AppColors.textWhite,
+              size: AppSizes.radius35,
+              iconSize: AppSizes.iconLarge,
               onPressed: _closeVideo,
             ),
             _buildControlButton(
@@ -351,10 +353,10 @@ class _VideoCallPageState extends State<VideoCallPage>
   Widget _buildControlButton({
     required IconData icon,
     required VoidCallback onPressed,
-    Color backgroundColor = Colors.white54,
-    Color iconColor = Colors.black,
-    double size = 30,
-    double iconSize = 26,
+    Color backgroundColor = const Color(0x8AFFFFFF), // Colors.white54
+    Color iconColor = AppColors.black, // Colors.black
+    double size = AppSizes.radius30,
+    double iconSize = AppSizes.iconMedium,
   }) {
     return CircleAvatar(
       radius: size,

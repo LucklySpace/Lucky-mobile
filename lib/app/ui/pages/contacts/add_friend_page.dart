@@ -1,6 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../controller/contact_controller.dart';
 
@@ -17,12 +20,14 @@ class AddFriendPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('添加好友'),
         elevation: 0,
         centerTitle: true,
+        backgroundColor: AppColors.primary,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textWhite),
           onPressed: () => Get.back(),
         ),
       ),
@@ -30,37 +35,42 @@ class AddFriendPage extends StatelessWidget {
         children: [
           /// **优化搜索框样式**
           Container(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.spacing16,
+              AppSizes.spacing8,
+              AppSizes.spacing16,
+              AppSizes.spacing16,
+            ),
             child: Material(
               elevation: 0,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppSizes.radius8),
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: '输入用户ID或手机号搜索',
-                  hintStyle: TextStyle(color: Colors.grey[500]),
-                  prefixIcon:
-                      Icon(Icons.search, color: Theme.of(context).primaryColor),
+                  hintStyle: const TextStyle(color: AppColors.textHint),
+                  prefixIcon: const Icon(Icons.search, color: AppColors.primary),
                   suffixIcon: IconButton(
-                    icon: Icon(Icons.clear, color: Colors.grey[500]),
+                    icon: const Icon(Icons.clear, color: AppColors.textHint),
                     onPressed: () => _searchController.clear(),
                   ),
                   filled: true,
-                  fillColor: Colors.white,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  fillColor: AppColors.surface,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.spacing16,
+                    vertical: AppSizes.spacing12,
+                  ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[200]!),
+                    borderRadius: BorderRadius.circular(AppSizes.radius8),
+                    borderSide: const BorderSide(color: AppColors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[200]!),
+                    borderRadius: BorderRadius.circular(AppSizes.radius8),
+                    borderSide: const BorderSide(color: AppColors.border),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide:
-                        BorderSide(color: Theme.of(context).primaryColor),
+                    borderRadius: BorderRadius.circular(AppSizes.radius8),
+                    borderSide: const BorderSide(color: AppColors.primary),
                   ),
                 ),
                 onSubmitted: (value) {
@@ -95,14 +105,13 @@ class AddFriendPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            valueColor:
-                AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+          const CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
-          const SizedBox(height: 16),
-          Text(
+          const SizedBox(height: AppSizes.spacing16),
+          const Text(
             '正在搜索...',
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.font14),
           ),
         ],
       ),
@@ -114,14 +123,15 @@ class AddFriendPage extends StatelessWidget {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off_rounded, size: 72, color: Colors.grey[400]),
-          const SizedBox(height: 12),
+        children: const [
+          Icon(Icons.search_off_rounded,
+              size: AppSizes.spacing80, color: AppColors.textDisabled),
+          SizedBox(height: AppSizes.spacing12),
           Text(
             '没有找到相关用户',
             style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 16,
+                color: AppColors.textSecondary,
+                fontSize: AppSizes.font16,
                 fontWeight: FontWeight.w500),
           ),
         ],
@@ -132,30 +142,40 @@ class AddFriendPage extends StatelessWidget {
   /// **用户列表**
   Widget _buildUserList() {
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
       itemCount: controller.searchResults.length,
       itemBuilder: (context, index) {
         final user = controller.searchResults[index];
 
         return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          color: Colors.white,
-          //elevation: 2, // 轻微阴影
-          // shape: RoundedRectangleBorder(
-          //   borderRadius: BorderRadius.circular(10),
-          //   side: BorderSide(color: Colors.grey[200]!, width: 1),
-          // ),
+          margin: const EdgeInsets.symmetric(
+            horizontal: AppSizes.spacing16,
+            vertical: AppSizes.spacing6,
+          ),
+          color: AppColors.surface,
           child: ListTile(
             leading: CircleAvatar(
-              backgroundImage:
-                  _isValidUrl(user.avatar) ? NetworkImage(user.avatar!) : null,
+              backgroundColor: AppColors.surface,
               child: _isValidUrl(user.avatar)
-                  ? null
-                  : Icon(Icons.person, color: Colors.white),
+                  ? ClipOval(
+                      child: CachedNetworkImage(
+                        imageUrl: user.avatar!,
+                        width: AppSizes.spacing40,
+                        height: AppSizes.spacing40,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => const Icon(
+                            Icons.person,
+                            color: AppColors.textDisabled),
+                        errorWidget: (context, url, error) => const Icon(
+                            Icons.person,
+                            color: AppColors.textDisabled),
+                      ),
+                    )
+                  : const Icon(Icons.person, color: AppColors.textDisabled),
             ),
             title: Text(user.name ?? "",
                 style: const TextStyle(fontWeight: FontWeight.w500)),
-            trailing: Icon(Icons.chevron_right, color: Colors.grey[400]),
+            trailing: const Icon(Icons.chevron_right, color: AppColors.textDisabled),
             onTap: () {
               // TODO: 可添加查看详情逻辑
               Get.toNamed("${Routes.HOME}${Routes.FRIEND_PROFILE}",

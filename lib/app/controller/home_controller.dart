@@ -3,6 +3,9 @@ import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../core/handlers/error_handler.dart';
+import 'package:flutter_im/exceptions/app_exception.dart';
+
 /// 主页控制器，管理底部导航栏切换和语言切换功能
 class HomeController extends GetxController {
   // 常量定义
@@ -39,6 +42,11 @@ class HomeController extends GetxController {
 
   // --- 辅助方法 ---
 
+  /// 显示错误提示
+  void _showError(dynamic error, {bool silent = false}) {
+    ErrorHandler.handle(error, silent: silent);
+  }
+
   /// 设置屏幕为竖屏模式
   Future<void> _setPortraitOrientation() async {
     try {
@@ -46,7 +54,7 @@ class HomeController extends GetxController {
         DeviceOrientation.portraitUp,
       ]);
     } catch (e) {
-      Get.log('设置竖屏失败: $e');
+      _showError(AppException('设置竖屏失败', details: e), silent: true);
     }
   }
 }

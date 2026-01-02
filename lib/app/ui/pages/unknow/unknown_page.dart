@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 
 /// 404 页面，显示页面未找到的错误提示
@@ -10,13 +12,13 @@ import '../../../../routes/app_routes.dart';
 /// - 使用主题化样式，支持暗黑模式和一致性 UI。
 class UnknownView extends GetView {
   // 常量定义
-  static const _iconSize = 80.0; // 错误图标尺寸
+  static const _iconSize = AppSizes.spacing80; // 错误图标尺寸
   static const _titleStyle =
-      TextStyle(fontSize: 40, fontWeight: FontWeight.bold); // 标题样式
-  static const _messageStyle = TextStyle(fontSize: 18); // 提示文本样式
-  static const _spacing = 16.0; // 垂直间距
-  static const _buttonSpacing = 24.0; // 按钮区域间距
-  static const _buttonTextStyle = TextStyle(fontSize: 16); // 按钮文本样式
+      TextStyle(fontSize: AppSizes.font32, fontWeight: FontWeight.bold); // 标题样式
+  static const _messageStyle = TextStyle(fontSize: AppSizes.font18); // 提示文本样式
+  static const _spacing = AppSizes.spacing16; // 垂直间距
+  static const _buttonSpacing = AppSizes.spacing24; // 按钮区域间距
+  static const _buttonTextStyle = TextStyle(fontSize: AppSizes.font16); // 按钮文本样式
 
   const UnknownView({super.key});
 
@@ -83,9 +85,10 @@ class UnknownView extends GetView {
         ElevatedButton(
           onPressed: Get.back,
           style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing24, vertical: AppSizes.spacing12),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radius8)),
           ),
           child: Text(
             '返回',
@@ -95,16 +98,17 @@ class UnknownView extends GetView {
                 _buttonTextStyle,
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: AppSizes.spacing16),
 
         /// 返回首页按钮
         OutlinedButton(
           onPressed: () => Get.offAllNamed(Routes.HOME),
           style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing24, vertical: AppSizes.spacing12),
             side: BorderSide(color: Theme.of(context).colorScheme.primary),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radius8)),
           ),
           child: Text(
             '返回首页',

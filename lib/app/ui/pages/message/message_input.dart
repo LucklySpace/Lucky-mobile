@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../../constants/app_message.dart';
 import '../../../controller/chat_controller.dart';
 import '../../widgets/emoji/emoji_picker.dart';
@@ -22,12 +24,12 @@ class MessageInput extends StatefulWidget {
 
 class _MessageInputState extends State<MessageInput> {
   // --- 常量 ---
-  static const _inputHeight = 36.0;
-  static const _inputBorderRadius = 6.0;
+  static const _inputHeight = AppSizes.spacing36;
+  static const _inputBorderRadius = AppSizes.radius6;
   static const _emojiPickerHeight = 250.0;
-  static const _buttonWidth = 36.0;
+  static const _buttonWidth = AppSizes.spacing36;
   static const _sendButtonWidth = 74.0;
-  static const _iconSize = 30.0;
+  static const _iconSize = AppSizes.iconLarge;
   static const _hintText = '输入消息...';
   static const _mentionTrigger = '@';
   static const _animationDuration = Duration(milliseconds: 200);
@@ -174,7 +176,7 @@ class _MessageInputState extends State<MessageInput> {
     } catch (_) {
       // 回退到最简单的做法
       _richTextController.text =
-          text.substring(0, text.length - 1).substring (0, text.length - 1);
+          text.substring(0, text.length - 1).substring(0, text.length - 1);
       _richTextController.selection =
           TextSelection.collapsed(offset: _richTextController.text.length);
     }
@@ -184,7 +186,9 @@ class _MessageInputState extends State<MessageInput> {
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.backspace) {
-      return _handleBackspace() ? KeyEventResult.handled : KeyEventResult.ignored;
+      return _handleBackspace()
+          ? KeyEventResult.handled
+          : KeyEventResult.ignored;
     }
     return KeyEventResult.ignored;
   }
@@ -193,7 +197,9 @@ class _MessageInputState extends State<MessageInput> {
     final text = _richTextController.text;
     final selection = _richTextController.selection;
 
-    if (!selection.isValid || !selection.isCollapsed || selection.baseOffset <= 0) {
+    if (!selection.isValid ||
+        !selection.isCollapsed ||
+        selection.baseOffset <= 0) {
       return false;
     }
 
@@ -275,7 +281,7 @@ class _MessageInputState extends State<MessageInput> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radius16)),
       ),
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.5,
@@ -283,7 +289,7 @@ class _MessageInputState extends State<MessageInput> {
         maxChildSize: 0.9,
         expand: false,
         builder: (context, scrollController) => Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSizes.spacing16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -294,7 +300,7 @@ class _MessageInputState extends State<MessageInput> {
                     .titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSizes.spacing16),
               Expanded(
                 child: ListView.builder(
                   controller: scrollController,
@@ -321,14 +327,16 @@ class _MessageInputState extends State<MessageInput> {
     return Container(
       height: _inputHeight,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(_inputBorderRadius),
-        border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1),
+        border:
+            Border.all(color: AppColors.border, width: AppSizes.spacing1),
       ),
       child: TextField(
         controller: _richTextController,
         focusNode: _focusNode,
-        readOnly: _isReadOnly, // 关键：true 时不会唤起系统键盘，但仍可聚焦显示光标
+        readOnly: _isReadOnly,
+        // 关键：true 时不会唤起系统键盘，但仍可聚焦显示光标
         showCursor: true,
         onTap: _onInputTap,
         enableInteractiveSelection: true,
@@ -337,15 +345,16 @@ class _MessageInputState extends State<MessageInput> {
           hintStyle: Theme.of(context)
               .textTheme
               .bodyMedium
-              ?.copyWith(color: Colors.grey[400]),
+              ?.copyWith(color: AppColors.textHint),
           border: InputBorder.none,
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: AppSizes.spacing16, vertical: AppSizes.spacing8),
         ),
         style: Theme.of(context)
             .textTheme
             .bodyMedium
-            ?.copyWith(color: Colors.grey[600]),
+            ?.copyWith(color: AppColors.textSecondary),
         maxLines: 1,
         textAlignVertical: TextAlignVertical.center,
       ),
@@ -360,67 +369,71 @@ class _MessageInputState extends State<MessageInput> {
       },
       child: _hasText
           ? SizedBox(
-        key: const ValueKey('send'),
-        width: _sendButtonWidth,
-        height: _inputHeight,
-        child: TextButton(
-          onPressed: () {
-            final text = _richTextController.text.trim();
-            if (text.isNotEmpty) {
-              widget.controller.sendMessage(text);
-              _richTextController.clear();
-              SystemChannels.textInput.invokeMethod('TextInput.hide');
-              FocusScope.of(context).requestFocus(_focusNode);
-            }
-          },
-          style: TextButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(_inputBorderRadius),
-            ),
-          ),
-          child: Text(
-            '发送',
-            style:
-            Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white),
-          ),
-        ),
-      )
+              key: const ValueKey('send'),
+              width: _sendButtonWidth,
+              height: _inputHeight,
+              child: TextButton(
+                onPressed: () {
+                  final text = _richTextController.text.trim();
+                  if (text.isNotEmpty) {
+                    widget.controller.sendMessage(text);
+                    _richTextController.clear();
+                    // 保持焦点以便继续输入，不隐藏键盘
+                    FocusScope.of(context).requestFocus(_focusNode);
+                  }
+                },
+                style: TextButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(_inputBorderRadius),
+                  ),
+                ),
+                child: Text(
+                  '发送',
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelLarge
+                      ?.copyWith(color: AppColors.white),
+                ),
+              ),
+            )
           : Row(
-        key: const ValueKey('icons'),
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: _buttonWidth,
-            child: IconButton(
-              onPressed: _toggleEmojiPicker,
-              icon: Icon(
-                Icons.emoji_emotions_outlined,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                size: _iconSize,
-              ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 36),
+              key: const ValueKey('icons'),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: _buttonWidth,
+                  child: IconButton(
+                    onPressed: _toggleEmojiPicker,
+                    icon: Icon(
+                      Icons.emoji_emotions_outlined,
+                      color: AppColors.textSecondary,
+                      size: _iconSize,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: AppSizes.spacing32, minHeight: AppSizes.spacing36),
+                  ),
+                ),
+                const SizedBox(width: AppSizes.spacing2),
+                SizedBox(
+                  width: _buttonWidth,
+                  child: IconButton(
+                    onPressed: () {
+                      Get.snackbar('提示', '加号功能待实现');
+                    },
+                    icon: Icon(
+                      Icons.add_circle_outline,
+                      color: AppColors.textSecondary,
+                      size: _iconSize,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: AppSizes.spacing32, minHeight: AppSizes.spacing36),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 2),
-          SizedBox(
-            width: _buttonWidth,
-            child: IconButton(
-              onPressed: () {
-                Get.snackbar('提示', '加号功能待实现');
-              },
-              icon: Icon(
-                Icons.add_circle_outline,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                size: _iconSize,
-              ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 36),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -449,12 +462,12 @@ class _MessageInputState extends State<MessageInput> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          color: Theme.of(context).colorScheme.background,
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16, vertical: AppSizes.spacing4),
+          color: AppColors.surface,
           child: Row(
             children: [
               Expanded(child: _buildInputField()),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSizes.spacing8),
               _buildButtons(),
             ],
           ),

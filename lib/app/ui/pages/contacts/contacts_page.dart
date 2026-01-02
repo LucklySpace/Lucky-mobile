@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../controller/contact_controller.dart';
 import '../../../models/friend.dart';
@@ -12,18 +14,28 @@ class ContactsPage extends GetView<ContactController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('通讯录'),
+        title: const Text(
+          '通讯录',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: AppSizes.font18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: AppColors.surface,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: const Icon(Icons.search, size: AppSizes.iconMedium),
             onPressed: () {
               // TODO: 实现搜索功能
             },
           ),
           IconButton(
-            icon: const Icon(Icons.person_add),
+            icon: const Icon(Icons.person_add, size: AppSizes.iconMedium),
             onPressed: () {
               // TODO: 实现添加联系人功能
               Get.toNamed("${Routes.HOME}${Routes.ADD_FRIEND}");
@@ -49,28 +61,29 @@ class ContactsPage extends GetView<ContactController> {
   Widget _buildNewFriendItem() {
     return ListTile(
       leading: Container(
-        width: 40,
-        height: 40,
+        width: AppSizes.spacing40,
+        height: AppSizes.spacing40,
         decoration: BoxDecoration(
-          color: Colors.green,
-          borderRadius: BorderRadius.circular(4),
+          color: AppColors.success,
+          borderRadius: BorderRadius.circular(AppSizes.radius4),
         ),
         child: const Icon(
           Icons.person_add,
-          color: Colors.white,
+          color: AppColors.textWhite,
+          size: AppSizes.iconMedium,
         ),
       ),
       title: const Text('新的朋友'),
       trailing: Obx(() => controller.newFriendRequestCount.value > 0
           ? Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(AppSizes.spacing4),
               decoration: const BoxDecoration(
-                color: Colors.red,
+                color: AppColors.error,
                 shape: BoxShape.circle,
               ),
               child: Text(
                 '${controller.newFriendRequestCount.value}',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
+                style: const TextStyle(color: AppColors.textWhite, fontSize: AppSizes.font12),
               ),
             )
           : const SizedBox()),

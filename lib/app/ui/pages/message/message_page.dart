@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../constants/app_message.dart';
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../../utils/date.dart';
 import '../../../controller/chat_controller.dart';
@@ -23,22 +25,22 @@ import 'message_input.dart';
 class MessagePage extends GetView<ChatController> {
   // 常量定义
   static const _appBarTitleStyle = TextStyle(
-    fontSize: 16,
+    fontSize: AppSizes.font16,
     fontWeight: FontWeight.w600,
   );
-  static const _loadingPadding = EdgeInsets.all(10.0);
-  static const _noMoreMessagesPadding = EdgeInsets.symmetric(vertical: 15.0);
+  static const _loadingPadding = EdgeInsets.all(AppSizes.spacing10);
+  static const _noMoreMessagesPadding = EdgeInsets.symmetric(vertical: AppSizes.spacing16);
   static const _noMoreMessagesStyle = TextStyle(
-    fontSize: 12,
-    color: Colors.grey,
+    fontSize: AppSizes.font12,
+    color: AppColors.textHint,
   );
   static const _timeStyle =
-      TextStyle(fontSize: 12, color: Colors.grey); // 时间标签样式
+      TextStyle(fontSize: AppSizes.font12, color: AppColors.textHint); // 时间标签样式
   static const _defaultName = '未知用户'; // 默认用户名
   static const _defaultAvatar = ''; // 默认头像 URL
   static const _timeDiffThreshold = Duration(minutes: 5); // 时间差阈值（5分钟）
   static const _timeFormat = 'yy/MM/dd'; // 时间格式
-  static const _timePadding = EdgeInsets.symmetric(vertical: 8); // 时间标签边距
+  static const _timePadding = EdgeInsets.symmetric(vertical: AppSizes.spacing8); // 时间标签边距
 
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -57,7 +59,7 @@ class MessagePage extends GetView<ChatController> {
     final userInfo = Get.find<UserController>().userInfo;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: _buildAppBar(userInfo),
       body: Column(
         children: [
@@ -239,7 +241,12 @@ class MessagePage extends GetView<ChatController> {
     required String name,
     required String avatar,
   }) =>
-      ImageBubble(message: message, isMe: isMe);
+      ImageBubble(
+        message: message,
+        isMe: isMe,
+        name: name,
+        avatar: avatar,
+      );
 
   /// 构建视频气泡
   static Widget _buildVideoBubble({
@@ -248,7 +255,12 @@ class MessagePage extends GetView<ChatController> {
     required String name,
     required String avatar,
   }) =>
-      VideoBubble(message: message, isMe: isMe);
+      VideoBubble(
+        message: message,
+        isMe: isMe,
+        name: name,
+        avatar: avatar,
+      );
 
   /// 构建文本气泡
   static Widget _buildTextBubble({

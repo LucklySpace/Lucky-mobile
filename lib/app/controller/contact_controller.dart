@@ -4,7 +4,9 @@ import 'package:get_it/get_it.dart';
 import 'package:get_storage/get_storage.dart';
 
 import '../api/api_service.dart';
+import '../core/handlers/error_handler.dart';
 import '../database/app_database.dart';
+import 'package:flutter_im/exceptions/app_exception.dart';
 import '../models/friend.dart';
 import '../models/friend_request.dart';
 
@@ -42,10 +44,10 @@ class ContactController extends GetxController {
 
   // --- 好友列表管理 ---
 
-  getUserId()  {
+  void getUserId() {
     final storedUserId = _storage.read(_keyUserId);
     if (storedUserId != null) {
-      userId.value = storedUserId;
+      userId.value = storedUserId.toString();
     }
   }
 
@@ -54,7 +56,7 @@ class ContactController extends GetxController {
     try {
       isLoading.value = true;
 
-      if(userId.isEmpty){
+      if (userId.isEmpty) {
         getUserId();
       }
 
@@ -94,7 +96,7 @@ class ContactController extends GetxController {
         'toId': friendId,
       });
       _handleApiResponse(response, onSuccess: (_) async {
-        if(Objects.isNotBlank(userId.value) && Objects.isNotBlank(friendId)){
+        if (Objects.isNotBlank(userId.value) && Objects.isNotBlank(friendId)) {
           await _db.friendDao.deleteFriend(userId.value, friendId);
         }
         Get.snackbar('成功', '已删除好友');
@@ -109,8 +111,7 @@ class ContactController extends GetxController {
 
   /// 获取好友请求列表，并更新未处理请求计数
   Future<void> fetchFriendRequests() async {
-
-    if(userId.isEmpty){
+    if (userId.isEmpty) {
       getUserId();
     }
 
@@ -198,16 +199,17 @@ class ContactController extends GetxController {
     required void Function(dynamic) onSuccess,
     required String errorMessage,
   }) {
-    if (response != null && response['code'] == _successCode) {
-      onSuccess(response['data']);
-    } else {
-      throw Exception(response?['message'] ?? errorMessage);
+    final code = Objects.safeGet<int>(response, 'code');
+    if (code == _successCode) {
+      return onSuccess(response?['data']);
     }
+    final msg = Objects.safeGet<String>(response, 'message', errorMessage);
+    throw BusinessException(msg.toString());
   }
 
   /// 显示错误提示
-  void _showError(String message) {
-    Get.snackbar('错误', message, snackPosition: SnackPosition.TOP);
+  void _showError(dynamic error) {
+    ErrorHandler.handle(error);
   }
 
   /// 更新好友请求计数

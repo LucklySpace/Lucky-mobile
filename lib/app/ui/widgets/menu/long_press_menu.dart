@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
+
 class LongPressMenu extends StatefulWidget {
   final Widget child;
   final List<MenuItem> items;
@@ -59,23 +62,25 @@ class _LongPressMenuState extends State<LongPressMenu>
     final padding = MediaQuery.of(context).padding;
 
     // 计算菜单尺寸（估算）：每项高度 48
-    final itemHeight = 48.0;
-    final menuHeight = itemHeight * widget.items.length + 8.0;
-    final menuWidth = widget.maxMenuWidth.clamp(120.0, screenSize.width - 24.0);
+    final itemHeight = AppSizes.spacing48;
+    final menuHeight = itemHeight * widget.items.length + AppSizes.spacing8;
+    final menuWidth =
+        widget.maxMenuWidth.clamp(120.0, screenSize.width - AppSizes.spacing24);
 
     // 初步位置：水平居中于 globalPosition.dx，垂直向下 10px
     double left = globalPosition.dx - menuWidth / 2 + widget.offset.dx;
-    double top = globalPosition.dy + 10.0 + widget.offset.dy;
+    double top = globalPosition.dy + AppSizes.spacing10 + widget.offset.dy;
 
     // 水平边界修正
-    if (left < 8.0) left = 8.0;
-    if (left + menuWidth > screenSize.width - 8.0)
-      left = screenSize.width - menuWidth - 8.0;
+    if (left < AppSizes.spacing8) left = AppSizes.spacing8;
+    if (left + menuWidth > screenSize.width - AppSizes.spacing8) {
+      left = screenSize.width - menuWidth - AppSizes.spacing8;
+    }
 
     // 垂直超出则向上弹
-    if (top + menuHeight > screenSize.height - padding.bottom - 8.0) {
-      top = globalPosition.dy - menuHeight - 10.0 + widget.offset.dy;
-      if (top < padding.top + 8.0) top = padding.top + 8.0;
+    if (top + menuHeight > screenSize.height - padding.bottom - AppSizes.spacing8) {
+      top = globalPosition.dy - menuHeight - AppSizes.spacing10 + widget.offset.dy;
+      if (top < padding.top + AppSizes.spacing8) top = padding.top + AppSizes.spacing8;
     }
 
     _overlayEntry = OverlayEntry(builder: (ctx) {
@@ -96,7 +101,7 @@ class _LongPressMenuState extends State<LongPressMenu>
                 left: left,
                 top: top,
                 child: SafeArea(
-                  minimum: const EdgeInsets.all(4.0),
+                  minimum: const EdgeInsets.all(AppSizes.spacing4),
                   child: ScaleTransition(
                     scale: _scaleAnim,
                     alignment: Alignment.topCenter,
@@ -115,9 +120,10 @@ class _LongPressMenuState extends State<LongPressMenu>
   }
 
   Widget _buildMenuContainer(double width) {
-    final bg = widget.backgroundColor ?? Theme.of(context).cardColor;
+    final bg = widget.backgroundColor ?? AppColors.surface;
     final shape = widget.shape ??
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0));
+        RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radius8));
     return Material(
       color: Colors.transparent,
       child: Container(
@@ -126,8 +132,10 @@ class _LongPressMenuState extends State<LongPressMenu>
           color: bg,
           shape: shape,
           shadows: [
-            const BoxShadow(
-                color: Colors.black26, blurRadius: 8, offset: Offset(0, 2)),
+            BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: AppSizes.radius8,
+                offset: const Offset(0, AppSizes.spacing2)),
           ],
         ),
         child: Column(
@@ -141,17 +149,21 @@ class _LongPressMenuState extends State<LongPressMenu>
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14.0, vertical: 12.0),
+                    horizontal: AppSizes.spacing16,
+                    vertical: AppSizes.spacing12),
                 child: Row(
                   children: [
                     if (it.icon != null) ...[
                       Icon(it.icon,
-                          size: 20, color: Theme.of(context).iconTheme.color),
-                      const SizedBox(width: 12),
+                          size: AppSizes.iconSmall,
+                          color: AppColors.textPrimary),
+                      const SizedBox(width: AppSizes.spacing12),
                     ],
                     Expanded(
                         child: Text(it.title,
-                            style: const TextStyle(fontSize: 16))),
+                            style: const TextStyle(
+                                fontSize: AppSizes.font16,
+                                color: AppColors.textPrimary))),
                   ],
                 ),
               ),

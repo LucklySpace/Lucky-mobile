@@ -7,4 +7,6 @@ class AppConstants {
   static const String LOGIN_QRCODE_PREFIX = 'IM-LOGIN-QRCODE-';
 
   static const String FRIEND_PROFILE_PREFIX = 'IM-FRIEND-PROFILE-';
+
+  static const String WALLET_ADDRESS_PREFIX = 'IM-WALLET-ADDRESS-';
 }

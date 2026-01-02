@@ -73,6 +73,7 @@ dependencies:
 
   # 加载与 UI 增强
   flutter_easyloading: ^3.0.3 # 加载动画：全局 Loading
+  nfc_manager: ^4.1.1
 
 # 开发依赖（dev_dependencies）
 dev_dependencies:

@@ -1,148 +1,117 @@
-// import 'package:blog/base/get/get_extension.dart';
-// import 'package:blog/http/request_repository.dart';
-// import 'package:blog/res/button_style.dart';
-// import 'package:blog/res/colors.dart';
-// import 'package:blog/res/decoration_style.dart';
-// import 'package:blog/res/r.dart';
-// import 'package:blog/res/strings.dart';
-// import 'package:blog/res/style.dart';
-// import 'package:blog/util/formatter/customized_length_formatter.dart';
-// import 'package:blog/util/navigate_util.dart';
-// import 'package:blog/util/toast_util.dart';
-// import 'package:blog/widget/ripple_widget.dart';
-// import 'package:flutter/material.dart';
-// import 'package:get/get.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_im/constants/app_colors.dart';
+import 'package:flutter_im/constants/app_sizes.dart';
+import 'package:get/get.dart';
+import 'dialog_base.dart';
 
-// import 'dialog_base.dart';
+/// @class : ShareArticleDialog
+/// @description : 分享文章弹窗
+class ShareArticleDialog extends StatelessWidget {
+  ///分享的链接
+  final String url;
 
-// /// @class : ShareArticleDialog
-// /// @date : 2021/9/13
-// /// @name : jhf
-// /// @description : 分享文章弹窗
-// class ShareArticleDialog extends StatelessWidget {
-//   ///分享的链接
-//   String url = 'https://www.baidu.com';
+  ///分享的文章标题
+  final String title;
 
-//   ///分享的文章标题
-//   String title = '';
+  final Function(String title)? onConfirm;
 
-//   ShareArticleDialog({Key? key, this.url = 'https://www.baidu.com'})
-//       : super(key: key);
+  ShareArticleDialog({
+    Key? key,
+    this.url = 'https://www.baidu.com',
+    this.title = '',
+    this.onConfirm,
+  }) : super(key: key);
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return BaseDialog(
-//         horizontal: 50,
-//         child: Column(
-//             mainAxisAlignment: MainAxisAlignment.start,
-//             crossAxisAlignment: CrossAxisAlignment.center,
-//             children: <Widget>[
-//               Box.vBox20,
-//               Text(
-//                 StringStyles.shareArticleTitle.tr,
-//                 style: Styles.style_black_16_bold500,
-//               ),
-//               Box.vBox20,
-//               Padding(
-//                   padding: const EdgeInsets.symmetric(horizontal: 20),
-//                   child: Text(
-//                     url,
-//                     style: Styles.style_FFAE2E_16,
-//                   )),
-//               Box.vBox20,
-//               Container(
-//                   height: 36,
-//                   padding: const EdgeInsets.symmetric(horizontal: 20),
-//                   child: TextField(
-//                     keyboardType: TextInputType.number,
-//                     textAlign: TextAlign.left,
-//                     autofocus: true,
-//                     maxLines: 1,
-//                     style: Styles.style_6A6969_14,
-//                     onChanged: (text) {
-//                       title = text;
-//                     },
-//                     inputFormatters: [
-//                       ///输入长度和格式限制
-//                       CustomizedLengthTextInputFormatter(50),
-//                     ],
+  final TextEditingController _controller = TextEditingController();
 
-//                     ///样式
-//                     decoration: InputDecoration(
-//                         fillColor: Colors.white12,
-//                         filled: true,
-//                         hintText: StringStyles.shareArticleHint.tr,
-//                         hintStyle: Styles.style_B8C0D4_14,
-//                         border: _getEditBorder(false),
-//                         focusedBorder: _getEditBorder(true),
-//                         disabledBorder: _getEditBorder(false),
-//                         enabledBorder: _getEditBorder(false),
-//                         contentPadding:
-//                             const EdgeInsets.only(left: 10, right: 10)),
-//                   )),
-//               Box.vBox20,
-//               Row(
-//                 mainAxisAlignment: MainAxisAlignment.center,
-//                 children: [
-//                   GestureDetector(
-//                       onTap: () {
-//                         shareArticle();
-//                         Get.back();
-//                       },
-//                       child: Container(
-//                         padding: const EdgeInsets.symmetric(
-//                             vertical: 7, horizontal: 12),
-//                         decoration: DecorationStyle.customize(
-//                             ColorStyle.color_24CF5F, 20),
-//                         child: Text(
-//                           StringStyles.shareArticleEnter.tr,
-//                           style: Styles.style_white_14,
-//                         ),
-//                       )),
-//                   Box.hBox15,
-//                   GestureDetector(
-//                     onTap: () {
-//                       Navigate.launchInBrowser(url);
-//                       Get.back();
-//                     },
-//                     child: Container(
-//                       padding: const EdgeInsets.symmetric(
-//                           vertical: 6, horizontal: 12),
-//                       decoration: DecorationStyle.customizeBorder(
-//                           color: ColorStyle.color_24CF5F),
-//                       child: Text(
-//                         StringStyles.shareBrowser.tr,
-//                         style: Styles.style_24CF5F_14,
-//                       ),
-//                     ),
-//                   )
-//                 ],
-//               ),
-//               Box.vBox30,
-//             ]));
-//   }
+  @override
+  Widget build(BuildContext context) {
+    _controller.text = title;
+    return BaseDialog(
+        horizontal: AppSizes.spacing50,
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              const SizedBox(height: AppSizes.spacing20),
+              const Text(
+                '分享文章',
+                style: TextStyle(
+                  fontSize: AppSizes.font16,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: AppSizes.spacing20),
+              Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing20),
+                  child: Text(
+                    url,
+                    style: const TextStyle(
+                      fontSize: AppSizes.font16,
+                      color: AppColors.warning,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  )),
+              const SizedBox(height: AppSizes.spacing20),
+              Container(
+                  height: AppSizes.spacing36,
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing20),
+                  child: TextField(
+                    controller: _controller,
+                    keyboardType: TextInputType.text,
+                    textAlign: TextAlign.left,
+                    autofocus: true,
+                    maxLines: 1,
+                    style: const TextStyle(fontSize: AppSizes.font14, color: AppColors.textSecondary),
+                    decoration: InputDecoration(
+                        fillColor: AppColors.background,
+                        filled: true,
+                        hintText: '请输入标题',
+                        hintStyle: const TextStyle(fontSize: AppSizes.font14, color: AppColors.textHint),
+                        border: _getEditBorder(false),
+                        focusedBorder: _getEditBorder(true),
+                        enabledBorder: _getEditBorder(false),
+                        contentPadding:
+                            const EdgeInsets.only(left: AppSizes.spacing10, right: AppSizes.spacing10)),
+                  )),
+              const SizedBox(height: AppSizes.spacing20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                      onTap: () {
+                        if (onConfirm != null) {
+                          onConfirm!(_controller.text);
+                        }
+                        Get.back();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: AppSizes.spacing6, horizontal: AppSizes.spacing12),
+                        decoration: BoxDecoration(
+                          color: AppColors.wechat,
+                          borderRadius: BorderRadius.circular(AppSizes.radius20),
+                        ),
+                        child: const Text(
+                          '分享',
+                          style: TextStyle(fontSize: AppSizes.font14, color: AppColors.textWhite),
+                        ),
+                      ))
+                ],
+              ),
+              const SizedBox(height: AppSizes.spacing20),
+            ]));
+  }
 
-//   ///分享文章
-//   shareArticle() {
-//     if (title.isEmpty) {
-//       ToastUtils.show(StringStyles.shareArticleEdit.tr);
-//       return;
-//     }
-//     var request = Get.find<RequestRepository>();
-//     request.shareArticle(title, url, success: (data) {
-//       ToastUtils.show(StringStyles.shareArticleSuccess.tr);
-//     });
-//   }
-
-//   ///获取输入框的Border属性，可公用
-//   ///[isEdit]是否获取焦点
-//   OutlineInputBorder _getEditBorder(bool isEdit) {
-//     return OutlineInputBorder(
-//       borderRadius: const BorderRadius.all(Radius.circular(30)),
-//       borderSide: BorderSide(
-//         color: isEdit ? ColorStyle.color_24CF5F : ColorStyle.colorShadow,
-//         width: 1,
-//       ),
-//     );
-//   }
-// }
+  OutlineInputBorder _getEditBorder(bool isEdit) {
+    return OutlineInputBorder(
+      borderRadius: const BorderRadius.all(Radius.circular(AppSizes.radius30)),
+      borderSide: BorderSide(
+        color: isEdit ? AppColors.wechat : AppColors.border,
+        width: AppSizes.spacing1,
+      ),
+    );
+  }
+}

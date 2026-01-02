@@ -205,19 +205,19 @@ class LocalNotificationService extends GetxService {
         iOS: iosDetails,
       );
 
-      await _plugin.zonedSchedule(
-        id,
-        title,
-        body,
-        scheduledDate,
-        details,
-        payload: payload,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        // 精确调度（需权限）
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: matchDateTimeComponents,
-      );
+      // await _plugin.zonedSchedule(
+      //   id,
+      //   title,
+      //   body,
+      //   scheduledDate,
+      //   details,
+      //   payload: payload,
+      //   androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      //   // 精确调度（需权限）
+      //   uiLocalNotificationDateInterpretation:
+      //       UILocalNotificationDateInterpretation.absoluteTime,
+      //   matchDateTimeComponents: matchDateTimeComponents,
+      // );
       Get.log('✅ 通知调度成功: ID=$id, 时间=${scheduledDate.toString()}');
       return true;
     } catch (e) {

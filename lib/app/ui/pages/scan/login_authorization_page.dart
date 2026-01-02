@@ -1,6 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../controller/home_controller.dart';
@@ -13,20 +16,22 @@ import '../../../controller/user_controller.dart';
 /// - 支持头像加载和错误处理，提升用户体验。
 class AuthorizationPage extends StatelessWidget {
   // 常量定义
-  static const _avatarSize = 120.0; // 头像容器尺寸
-  static const _avatarBorderRadius = 6.0; // 头像圆角
-  static const _avatarPlaceholderColor = Colors.grey; // 头像占位颜色
+  static const _avatarSize = AppSizes.spacing120; // 头像容器尺寸
+  static const _avatarBorderRadius = AppSizes.radius6; // 头像圆角
+  static const _avatarPlaceholderColor = AppColors.textHint; // 头像占位颜色
   static const _avatarBackgroundOpacity = 0.1; // 头像背景透明度
-  static const _padding = EdgeInsets.all(24); // 页面边距
-  static const _titleStyle =
-      TextStyle(fontSize: 24, fontWeight: FontWeight.bold); // 标题样式
-  static const _subtitleStyle =
-      TextStyle(fontSize: 16, color: Colors.grey); // 副标题样式
-  static const _buttonPadding =
-      EdgeInsets.symmetric(horizontal: kSize32, vertical: kSize12); // 按钮内边距
-  static const _buttonBorderRadius = 8.0; // 按钮圆角
-  static const _buttonTextStyle =
-      TextStyle(fontSize: kSize16, fontWeight: FontWeight.w500); // 按钮文本样式
+  static const _padding = EdgeInsets.all(AppSizes.spacing24); // 页面边距
+  static const _titleStyle = TextStyle(
+      fontSize: AppSizes.font24,
+      fontWeight: FontWeight.bold,
+      color: AppColors.textPrimary); // 标题样式
+  static const _subtitleStyle = TextStyle(
+      fontSize: AppSizes.font16, color: AppColors.textSecondary); // 副标题样式
+  static const _buttonPadding = EdgeInsets.symmetric(
+      horizontal: AppSizes.spacing32, vertical: AppSizes.spacing12); // 按钮内边距
+  static const _buttonBorderRadius = AppSizes.radius8; // 按钮圆角
+  static const _buttonTextStyle = TextStyle(
+      fontSize: AppSizes.font16, fontWeight: FontWeight.w500); // 按钮文本样式
   static const _defaultAvatar = ''; // 默认头像 URL
 
   final String code; // 二维码数据
@@ -41,10 +46,11 @@ class AuthorizationPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('登录授权'),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              color: AppColors.textPrimary),
           onPressed: Get.back, // 使用 Get.back 替代 Navigator.pop
         ),
       ),
@@ -56,27 +62,21 @@ class AuthorizationPage extends StatelessWidget {
             children: [
               /// 用户头像
               _buildAvatar(controller.userInfo, context),
-              const SizedBox(height: kSize32),
+              const SizedBox(height: AppSizes.spacing32),
 
               /// 标题
               Text(
                 '授权确认',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ) ??
-                    _titleStyle,
+                style: _titleStyle,
               ),
-              const SizedBox(height: kSize16),
+              const SizedBox(height: AppSizes.spacing16),
 
               /// 副标题
               Text(
                 '是否确认授权登录该设备？',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey[600],
-                        ) ??
-                    _subtitleStyle,
+                style: _subtitleStyle,
               ),
-              const SizedBox(height: kSize40),
+              const SizedBox(height: AppSizes.spacing40),
 
               /// 按钮区域
               _buildButtons(context, controller),
@@ -94,46 +94,42 @@ class AuthorizationPage extends StatelessWidget {
     final avatarUrl = userInfo['avatar'] as String? ?? _defaultAvatar;
 
     return Container(
-      width: _avatarSize,
-      height: _avatarSize,
-      decoration: BoxDecoration(
-        color: Theme.of(context)
-            .primaryColor
-            .withOpacity(_avatarBackgroundOpacity),
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(_avatarBorderRadius),
-          child: SizedBox(
-            width: kSize35,
-            height: kSize35,
-            child: avatarUrl.isNotEmpty
-                ? Image.network(
-                    avatarUrl,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(child: CircularProgressIndicator());
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      debugPrint('加载头像失败: $error');
-                      return Container(
-                        color: _avatarPlaceholderColor[300],
-                        child: const Icon(Icons.person,
-                            size: kSize35, color: Colors.white),
-                      );
-                    },
-                  )
-                : Container(
-                    color: _avatarPlaceholderColor[300],
-                    child: const Icon(Icons.person,
-                        size: kSize35, color: Colors.white),
-                  ),
-          ),
+        width: _avatarSize,
+        height: _avatarSize,
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(_avatarBackgroundOpacity),
+          shape: BoxShape.circle,
         ),
-      ),
-    );
+        child: Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(_avatarBorderRadius),
+            child: SizedBox(
+              width: AppSizes.spacing36,
+              height: AppSizes.spacing36,
+              child: avatarUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: avatarUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) =>
+                              const Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) {
+                            debugPrint('加载头像失败: $error');
+                            return Container(
+                              color: _avatarPlaceholderColor,
+                              child: const Icon(Icons.person,
+                                  size: AppSizes.spacing36,
+                                  color: AppColors.textWhite),
+                            );
+                          },
+                        )
+                      : Container(
+                      color: _avatarPlaceholderColor,
+                      child: const Icon(Icons.person,
+                          size: AppSizes.spacing36, color: AppColors.textWhite),
+                    ),
+            ),
+          ),
+        ));
   }
 
   /// 构建取消和确认按钮
@@ -146,20 +142,20 @@ class AuthorizationPage extends StatelessWidget {
           onPressed: Get.back,
           style: OutlinedButton.styleFrom(
             padding: _buttonPadding,
-            side: BorderSide(color: Theme.of(context).primaryColor),
+            side: const BorderSide(color: AppColors.primary),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(_buttonBorderRadius),
             ),
           ),
-          child: Text(
+          child: const Text(
             '取消',
             style: TextStyle(
-              color: Theme.of(context).primaryColor,
-              fontSize: kSize16,
+              color: AppColors.primary,
+              fontSize: AppSizes.font16,
             ),
           ),
         ),
-        const SizedBox(width: kSize20),
+        const SizedBox(width: AppSizes.spacing20),
 
         /// 确认登录按钮
         ElevatedButton(
@@ -177,14 +173,14 @@ class AuthorizationPage extends StatelessWidget {
           },
           style: ElevatedButton.styleFrom(
             padding: _buttonPadding,
-            backgroundColor: Theme.of(context).primaryColor,
+            backgroundColor: AppColors.primary,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(_buttonBorderRadius),
             ),
           ),
           child: Text(
             '确认登录',
-            style: _buttonTextStyle.copyWith(color: Colors.white),
+            style: _buttonTextStyle.copyWith(color: AppColors.textWhite),
           ),
         ),
       ],

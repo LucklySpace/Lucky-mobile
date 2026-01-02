@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
+
 /// 自定义 Iconfont 图标组件，封装基于自定义字体文件的图标
 /// 特性：
 /// - 提供静态 [IconData] 属性，基于自定义字体文件（如 iconfont.ttf）。
 /// - 支持主题化配置（如大小、颜色）。
 /// - 易于扩展，可添加新的图标代码点。
-/// 使用方式：
-/// ```dart
-/// Icon(Iconfont.message, size: 24, color: Colors.blue)
-/// ```
 class Iconfont {
   // 常量定义：字体家族名称
   static const String _fontFamily = 'Iconfont';
@@ -97,10 +96,10 @@ class Iconfont {
   /// - [color]：图标颜色，默认为主题的 [onSurface] 颜色。
   static Widget buildIcon({
     required IconData icon,
-    double size = 24.0,
+    double size = AppSizes.iconMedium,
     Color? color,
   }) {
-    return Icon(icon, size: size, color: color);
+    return Icon(icon, size: size, color: color ?? AppColors.textPrimary);
   }
 
   /// 将图标代码点转换为 [IconData]

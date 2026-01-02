@@ -115,17 +115,29 @@ void callbackDispatcher() {
 
 /// 自定义日志格式，包含时间戳、类名、行号
 void customLogWriter(String text, {bool isError = false}) {
+  // 仅在调试模式下执行详细的日志处理，避免生产环境性能损耗
+  if (!AppConfig.debug) {
+    if (isError) debugPrint('❌ $text');
+    return;
+  }
+
   final now = DateTime.now();
   final formattedTime =
-      "${now.year}-${now.month}-${now.day} ${now.hour}:${now.minute}:${now.second}";
+      "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
 
-  final frame = StackTrace.current.toString().split("\n")[2]; // 获取调用日志的代码位置
-  final fileInfo =
-      RegExp(r'\((.*?):(\d+):(\d+)\)').firstMatch(frame); // 提取文件名、行号
-  final file = fileInfo?.group(1) ?? "Unknown";
-  final line = fileInfo?.group(2) ?? "0";
+  String fileInfoStr = "Unknown:0";
+  try {
+    // 获取调用栈可能比较耗时，仅在debug模式且确实需要时调用
+    final frame = StackTrace.current.toString().split("\n")[2];
+    final fileInfo = RegExp(r'\((.*?):(\d+):(\d+)\)').firstMatch(frame);
+    if (fileInfo != null) {
+      fileInfoStr = "${fileInfo.group(1)}:${fileInfo.group(2)}";
+    }
+  } catch (e) {
+    // 忽略堆栈解析错误
+  }
 
-  final logText = "${isError ? '❌' : '✅'} [$formattedTime] ($file:$line) $text";
+  final logText = "${isError ? '❌' : '✅'} [$formattedTime] ($fileInfoStr) $text";
   debugPrint(logText);
 }
 

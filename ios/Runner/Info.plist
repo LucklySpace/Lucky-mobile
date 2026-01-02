@@ -64,5 +64,7 @@
     <key>Localization native development region</key>
     <string>zh_CN</string>
 
+    <key>NFCReaderUsageDescription</key>
+    <string>需要使用NFC进行支付或读取标签</string>
 </dict>
 </plist>

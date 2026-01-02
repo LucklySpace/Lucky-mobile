@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_im/constants/app_colors.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
@@ -11,404 +14,442 @@ import '../../../models/User.dart';
 import '../../widgets/crop/crop_image.dart';
 
 /// 用户资料页面
-///
-/// 展示并编辑用户的详细信息，包括圆角矩形头像、用户名、性别、生日、地区和个性签名。
-/// 支持查看大图、更换头像和编辑模式切换（右上角编辑按钮）。
-/// 使用 GetX 响应式状态管理，编辑模式下转为可编辑表单，保存后更新控制器。
 class UserProfilePage extends GetView<UserController> {
   const UserProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 初始化编辑控制器（一次性创建，避免重复）
+    // 初始化控制器
     final usernameController = TextEditingController();
     final birthdayController = TextEditingController();
     final locationController = TextEditingController();
     final signatureController = TextEditingController();
-    // 定义性别变量，避免直接修改 userInfo
-    final gender = RxInt(-1); // -1 表示未设置，0 表示女，1 表示男
+    
+    final gender = RxInt(-1); 
     final avatarUrl = RxString("");
 
-    return WillPopScope(onWillPop: () async {
-      if (controller.isEditing.value) {
-        controller.isEditing.value = false; // 退出页面时强制结束编辑模式
-        return false; // 拦截返回，防止直接退出
-      }
-      return true; // 正常退出
-    }, child: Obx(() {
-      final isEditing = controller.isEditing.value;
+    return WillPopScope(
+      onWillPop: () async {
+        if (controller.isEditing.value) {
+          controller.isEditing.value = false;
+          return false;
+        }
+        return true;
+      },
+      child: Obx(() {
+        final isEditing = controller.isEditing.value;
+        final userInfo = controller.userInfo;
 
-      final userInfo = new Map.from(controller.userInfo);
+        // 非编辑模式下同步数据
+        if (!isEditing) {
+          usernameController.text = userInfo['name'] as String? ?? '';
+          birthdayController.text = userInfo['birthday'] as String? ?? '';
+          locationController.text = userInfo['location'] as String? ?? '';
+          signatureController.text = userInfo['selfSignature'] as String? ?? '';
+          gender.value = userInfo['gender'] as int? ?? -1;
+          avatarUrl.value = userInfo['avatar'] as String? ?? '';
+        }
 
-      // 同步数据到控制器（仅在非编辑模式或数据变更时）
-      if (!isEditing) {
-        usernameController.text = userInfo['name'] as String? ?? '未设置';
-        birthdayController.text = userInfo['birthday'] as String? ?? '未设置';
-        locationController.text = userInfo['location'] as String? ?? '未设置';
-        signatureController.text =
-            userInfo['selfSignature'] as String? ?? '未设置签名';
-        // 同步性别数据
-        gender.value = userInfo['gender'] as int? ?? -1;
-        avatarUrl.value = userInfo['avatar'] as String? ?? '';
-      }
+        return Scaffold(
+          backgroundColor: const Color(0xFFF5F6F8), // 浅灰背景
+          appBar: _buildAppBar(isEditing),
+          body: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 40),
+            child: Column(
+              children: [
+                const SizedBox(height: 24),
+                // 头像区域
+                _buildAvatarSection(context, avatarUrl.value, isEditing),
+                
+                const SizedBox(height: 32),
+                
+                // 基本信息卡片
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.02),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      _buildListTile(
+                        label: '用户名',
+                        content: _buildTextField(usernameController, isEditing, hint: '设置用户名'),
+                      ),
+                      _buildDivider(),
+                      _buildListTile(
+                        label: '性别',
+                        content: isEditing 
+                          ? _buildGenderSelector(gender) 
+                          : Text(_getGenderText(gender.value), style: _contentStyle),
+                      ),
+                      _buildDivider(),
+                      _buildListTile(
+                        label: '生日',
+                        content: isEditing
+                          ? _buildClickableField(birthdayController, '选择日期', () => _selectBirthDate(birthdayController))
+                          : Text(birthdayController.text.isEmpty ? '未设置' : birthdayController.text, style: _contentStyle),
+                      ),
+                      _buildDivider(),
+                      _buildListTile(
+                        label: '地区',
+                        content: _buildTextField(locationController, isEditing, hint: '添加地区'),
+                      ),
+                    ],
+                  ),
+                ),
 
-      return Scaffold(
-        appBar: _buildAppBar(isEditing),
-        body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            children: [
-              // 头像区域（圆角矩形，支持点击查看大图）
-              _buildAvatarSection(
-                  userInfo['avatar'] as String? ?? '', context, isEditing),
+                const SizedBox(height: 20),
 
-              // 用户基本信息（编辑模式下转为 TextField）
-              _buildUserInfoItem('用户名', usernameController, isEditing),
+                // 个性签名卡片
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.02),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('个性签名', style: TextStyle(
+                        fontSize: 15, 
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary
+                      )),
+                      const SizedBox(height: 12),
+                      isEditing 
+                        ? TextField(
+                            controller: signatureController,
+                            maxLines: 4,
+                            maxLength: 50,
+                            style: const TextStyle(fontSize: 15, height: 1.5),
+                            decoration: InputDecoration(
+                              hintText: '写点什么...',
+                              hintStyle: TextStyle(color: Colors.grey[400]),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: const Color(0xFFF9FAFB),
+                              contentPadding: const EdgeInsets.all(12),
+                              counterText: "",
+                            ),
+                          )
+                        : Text(
+                            signatureController.text.isEmpty ? '暂无签名' : signatureController.text,
+                            style: TextStyle(
+                              fontSize: 15,
+                              height: 1.5,
+                              color: signatureController.text.isEmpty ? Colors.grey : const Color(0xFF4A4A4A)
+                            ),
+                          ),
+                    ],
+                  ),
+                ),
 
-              // 性别（暂不支持编辑，使用下拉选择或类似，可扩展）
-              _buildUserInfoItem(
-                  '性别',
-                  TextEditingController(
-                      text: _getGenderText(userInfo['gender'] as int?)),
-                  isEditing,
-                  gender: gender),
-
-              // 生日
-              _buildUserInfoItem('生日', birthdayController, isEditing),
-
-              // 地区
-              _buildUserInfoItem('地区', locationController, isEditing),
-
-              // 个性签名
-              _buildSignatureSection(signatureController, isEditing),
-
-              // 保存按钮（仅编辑模式显示）
-              if (isEditing)
-                _buildSaveButton(usernameController, birthdayController,
-                    locationController, signatureController, gender, avatarUrl),
-            ],
+                if (isEditing) ...[
+                  const SizedBox(height: 40),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () => _handleSave(
+                          usernameController, 
+                          birthdayController, 
+                          locationController, 
+                          signatureController, 
+                          gender, 
+                          avatarUrl
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          elevation: 2,
+                          shadowColor: AppColors.primary.withOpacity(0.3),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                        ),
+                        child: const Text('保存修改', style: TextStyle(
+                          fontSize: 16, 
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white
+                        )),
+                      ),
+                    ),
+                  ),
+                ]
+              ],
+            ),
           ),
-        ),
-      );
-    }));
+        );
+      }),
+    );
   }
+  
+  // --- 样式定义 ---
+  final TextStyle _labelStyle = const TextStyle(
+    fontSize: 16, 
+    fontWeight: FontWeight.w500, 
+    color: AppColors.textPrimary
+  );
+  
+  final TextStyle _contentStyle = const TextStyle(
+    fontSize: 16, 
+    color: Color(0xFF4A4A4A)
+  );
 
-  /// 构建 AppBar，支持编辑/保存切换
+  // --- 组件构建 ---
+
   AppBar _buildAppBar(bool isEditing) {
     return AppBar(
       title: const Text('个人资料'),
       centerTitle: true,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      titleTextStyle: const TextStyle(
+        color: AppColors.textPrimary,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      iconTheme: const IconThemeData(color: AppColors.textPrimary),
       actions: [
         TextButton(
           onPressed: () {
             controller.isEditing.toggle();
-            if (!controller.isEditing.value) {
-              // 退出编辑模式时，可添加取消逻辑（如重载数据）
-              //controller.loadUserInfo(); // 假设有刷新方法
-            }
           },
-          child: Text(isEditing ? '取消' : '编辑',
-              style: const TextStyle(color: Colors.blue)),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+          child: Text(isEditing ? '取消' : '编辑'),
         ),
+        const SizedBox(width: 8),
       ],
     );
   }
 
-  /// 构建头像区域：圆角矩形，支持查看大图和更换头像
-  Widget _buildAvatarSection(
-      String avatarUrl, BuildContext context, bool isEditing) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2))
-        ],
-      ),
-      child: GestureDetector(
-        onTap: () => _viewFullImage(context, avatarUrl), // 点击查看大图
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          alignment: Alignment.center,
-          child: Column(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8), // 圆角矩形
-                child: avatarUrl.isNotEmpty
-                    ? Image.network(
-                        avatarUrl,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.person, size: 80),
-                      )
-                    : const Icon(Icons.person, size: 80),
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: isEditing ? () => _changeAvatar() : null, // 编辑模式下更换头像
-                child: Text(
-                  isEditing ? '更换头像' : '',
-                  style: const TextStyle(fontSize: 14, color: Colors.blue),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 构建用户信息项：支持编辑模式下转为 TextField
-  Widget _buildUserInfoItem(
-    String label,
-    TextEditingController controller,
-    bool isEditing, {
-    bool readOnly = false,
-    RxInt? gender, // 性别值，用于性别选择器
-  }) {
-    // 特殊处理性别选择（仅此处修改为 Radio 选择器，UI/样式保持原有 ListTile 布局）
-    if (label == '性别' && isEditing) {
-      final currentGender = gender; // 使用传递进来的性别值
-
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2))
-          ],
-        ),
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          title: Text(label,
-              style: const TextStyle(fontSize: 16, color: Colors.black87)),
-          trailing: Obx(() => Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 男
-                  GestureDetector(
-                    onTap: () {
-                      // 更新性别变量而不直接修改 userInfo
-                      currentGender?.value = 1;
-                    },
-                    child: Row(
-                      children: [
-                        Radio<int>(
-                          value: 1,
-                          groupValue: currentGender?.value,
-                          onChanged: (value) {
-                            if (value != null) {
-                              // 更新性别变量而不直接修改 userInfo
-                              currentGender?.value = value;
-                            }
-                          },
-                        ),
-                        const Text('男'),
-                      ],
-                    ),
-                  ),
-                  // 女
-                  GestureDetector(
-                    onTap: () {
-                      // 更新性别变量而不直接修改 userInfo
-                      currentGender?.value = 0;
-                    },
-                    child: Row(
-                      children: [
-                        Radio<int>(
-                          value: 0,
-                          groupValue: currentGender?.value,
-                          onChanged: (value) {
-                            if (value != null) {
-                              // 更新性别变量而不直接修改 userInfo
-                              currentGender?.value = value;
-                            }
-                          },
-                        ),
-                        const Text('女'),
-                      ],
-                    ),
+  Widget _buildAvatarSection(BuildContext context, String url, bool isEditing) {
+    return Center(
+      child: Stack(
+        children: [
+          GestureDetector(
+            onTap: () => _viewFullImage(context, url),
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24), // 圆角矩形
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
-              )),
-        ),
-      );
-    }
-
-    // 特殊处理生日选择（使用日期选择器）
-    if (label == '生日' && isEditing) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2))
-          ],
-        ),
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          title: Text(label,
-              style: const TextStyle(fontSize: 16, color: Colors.black87)),
-          trailing: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 200),
-            child: TextField(
-              controller: controller,
-              readOnly: true,
-              // 设为只读，通过点击弹出日期选择器
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding:
-                    EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+                color: Colors.white,
               ),
-              style: const TextStyle(fontSize: 16, color: Colors.black),
-              textAlign: TextAlign.right,
-              onTap: () => _selectBirthDate(controller), // 点击弹出日期选择器
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: url.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: url,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => const Center(
+                          child: Icon(Icons.person, size: 40, color: Color(0xFFE0E0E0)),
+                        ),
+                        errorWidget: (context, url, error) => const Center(
+                          child: Icon(Icons.person, size: 40, color: Color(0xFFE0E0E0)),
+                        ),
+                      )
+                    : const Center(
+                        child: Icon(Icons.person, size: 50, color: Color(0xFFE0E0E0)),
+                      ),
+              ),
             ),
           ),
-        ),
+          if (isEditing)
+            Positioned(
+              right: -4,
+              bottom: -4,
+              child: GestureDetector(
+                onTap: _changeAvatar,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      )
+                    ]
+                  ),
+                  child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListTile({required String label, required Widget content}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(label, style: _labelStyle),
+          ),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: content,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, bool isEditing, {String? hint}) {
+    if (!isEditing) {
+      return Text(
+        controller.text.isEmpty ? '未设置' : controller.text, 
+        style: _contentStyle,
+        overflow: TextOverflow.ellipsis,
       );
     }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2))
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Text(label,
-            style: const TextStyle(fontSize: 16, color: Colors.black87)),
-        trailing: isEditing
-            ? ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 200),
-                child: TextField(
-                  controller: controller,
-                  readOnly: readOnly,
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding:
-                        EdgeInsets.symmetric(vertical: 8, horizontal: 0),
-                  ),
-                  style: const TextStyle(fontSize: 16, color: Colors.black),
-                  textAlign: TextAlign.right,
-                ),
-              )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(controller.text,
-                      style: const TextStyle(fontSize: 16, color: Colors.grey)),
-                  const Icon(Icons.arrow_forward_ios,
-                      size: 16, color: Colors.grey),
-                ],
-              ),
+    
+    return TextField(
+      controller: controller,
+      textAlign: TextAlign.right,
+      style: _contentStyle,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey[400]),
+        border: InputBorder.none,
+        isDense: true,
+        contentPadding: EdgeInsets.zero,
       ),
     );
   }
 
-  /// 构建个性签名区域：支持多行编辑
-  Widget _buildSignatureSection(
-      TextEditingController controller, bool isEditing) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2))
+  Widget _buildClickableField(TextEditingController controller, String hint, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            controller.text.isEmpty ? hint : controller.text,
+            style: TextStyle(
+              fontSize: 16,
+              color: controller.text.isEmpty ? Colors.grey[400] : const Color(0xFF4A4A4A)
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
         ],
       ),
+    );
+  }
+
+  Widget _buildGenderSelector(RxInt gender) {
+    return Obx(() => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildGenderChip('男', 1, gender),
+        const SizedBox(width: 12),
+        _buildGenderChip('女', 0, gender),
+      ],
+    ));
+  }
+
+  Widget _buildGenderChip(String label, int value, RxInt groupValue) {
+    final isSelected = groupValue.value == value;
+    return GestureDetector(
+      onTap: () => groupValue.value = value,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('个性签名',
-                style: TextStyle(fontSize: 16, color: Colors.black87)),
-            const SizedBox(height: 8),
-            isEditing
-                ? TextField(
-                    controller: controller,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFFEEEEEE))),
-                      isDense: true,
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                    style: const TextStyle(fontSize: 16, color: Colors.black),
-                  )
-                : Text(controller.text,
-                    style: const TextStyle(fontSize: 16, color: Colors.grey)),
-          ],
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : const Color(0xFFF5F6F8),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey[600],
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );
   }
 
-  /// 构建保存按钮
-  Widget _buildSaveButton(
-      TextEditingController usernameController,
-      TextEditingController birthdayController,
-      TextEditingController locationController,
-      TextEditingController signatureController,
-      RxInt gender,
-      RxString avatarUrl) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: ElevatedButton(
-        onPressed: () async {
-
-          if (avatarUrl.isNotEmpty &&
-              controller.userInfo['avatar'] != avatarUrl.value) {
-            avatarUrl.value = controller.userInfo['avatar'];
-          }
-
-          // 收集数据更新 userInfo
-          final user = new User(
-              userId: controller.userId.value,
-              name: usernameController.text,
-              avatar: avatarUrl.value,
-              birthday: birthdayController.text,
-              location: locationController.text,
-              gender: gender.value == -1 ? 1 : gender.value,
-              selfSignature: signatureController.text);
-          if (user.name.isEmpty) {
-            // Get.sh  showToast('请填写用户名');
-            return;
-          }
-          await controller.updateUserInfo(user);
-          controller.isEditing.value = false; // 退出编辑模式
-        },
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        child: const Text('保存'),
-      ),
-    );
+  Widget _buildDivider() {
+    return const Divider(height: 1, thickness: 0.5, indent: 20, endIndent: 20, color: Color(0xFFEEEEEE));
   }
 
-  /// 查看全屏大图
+  // --- 逻辑处理 ---
+
+  Future<void> _handleSave(
+    TextEditingController usernameController,
+    TextEditingController birthdayController,
+    TextEditingController locationController,
+    TextEditingController signatureController,
+    RxInt gender,
+    RxString avatarUrl,
+  ) async {
+    // 检查用户名
+    if (usernameController.text.trim().isEmpty) {
+      Get.snackbar('提示', '用户名不能为空', snackPosition: SnackPosition.TOP);
+      return;
+    }
+
+    // 更新头像URL（如果已更改）
+    if (avatarUrl.isNotEmpty && controller.userInfo['avatar'] != avatarUrl.value) {
+      avatarUrl.value = controller.userInfo['avatar'];
+    }
+
+    final user = User(
+      userId: controller.userId.value,
+      name: usernameController.text.trim(),
+      avatar: avatarUrl.value,
+      birthday: birthdayController.text,
+      location: locationController.text.trim(),
+      gender: gender.value == -1 ? 1 : gender.value, // 默认为男
+      selfSignature: signatureController.text.trim()
+    );
+
+    await controller.updateUserInfo(user);
+    controller.isEditing.value = false;
+  }
+
   void _viewFullImage(BuildContext context, String avatarUrl) {
     if (avatarUrl.isEmpty) return;
     Navigator.push(
@@ -419,7 +460,7 @@ class UserProfilePage extends GetView<UserController> {
           body: GestureDetector(
             onTap: () => Navigator.pop(context),
             child: PhotoView(
-              imageProvider: NetworkImage(avatarUrl),
+              imageProvider: CachedNetworkImageProvider(avatarUrl),
               backgroundDecoration: const BoxDecoration(color: Colors.black),
               minScale: PhotoViewComputedScale.contained,
               maxScale: PhotoViewComputedScale.covered * 2.0,
@@ -430,54 +471,75 @@ class UserProfilePage extends GetView<UserController> {
     );
   }
 
-  /// 更换头像
+  String _getGenderText(int? gender) {
+    switch (gender) {
+      case 0: return '女';
+      case 1: return '男';
+      default: return '未设置';
+    }
+  }
+
   Future<void> _changeAvatar() async {
     showModalBottomSheet(
       context: Get.context!,
+      backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('拍摄照片'),
-                onTap: () {
-                  Navigator.pop(context);
-                  getImage();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('从相册选取'),
-                onTap: () {
-                  Navigator.pop(context);
-                  chooseImage();
-                },
-              ),
-            ],
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.blue[50], shape: BoxShape.circle),
+                    child: const Icon(Icons.camera_alt, color: Colors.blue),
+                  ),
+                  title: const Text('拍摄照片', style: TextStyle(fontWeight: FontWeight.w500)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    getImage();
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.purple[50], shape: BoxShape.circle),
+                    child: const Icon(Icons.photo_library, color: Colors.purple),
+                  ),
+                  title: const Text('从相册选取', style: TextStyle(fontWeight: FontWeight.w500)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    chooseImage();
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  ///拍摄照片
   Future getImage() async {
-    final ImagePicker _picker = ImagePicker();
-    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.camera);
     if (image != null) {
       cropImage(File(image.path));
     }
   }
 
-  ///从相册选取
   Future chooseImage() async {
-    final ImagePicker _picker = ImagePicker();
-    final XFile? image = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-    );
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (image != null) {
       cropImage(File(image.path));
     }
@@ -485,49 +547,37 @@ class UserProfilePage extends GetView<UserController> {
 
   void cropImage(File originalImage) async {
     try {
-      print('Selected image path: ${originalImage.path}');
-
-      // 创建一个 CropImage 实例 设置超时时间
-      final File? cropped =
-          await CropperImage.crop(originalImage, AppConfig.cropImageTimeout);
-
+      final File? cropped = await CropperImage.crop(originalImage, AppConfig.cropImageTimeout);
       if (cropped != null) {
-        // 上传图片并获取返回的图片 URL
         final String? imageUrl = await controller.uploadImage(cropped);
         if (imageUrl != null) {
-          // 更新 UI 中的头像
           controller.userInfo['avatar'] = imageUrl;
-          controller.userInfo.refresh(); // 触发 Obx 更新
+          controller.userInfo.refresh();
         }
       }
     } catch (e) {
-      print('Error creating CropperImage: $e');
+      debugPrint('Error creating CropperImage: $e');
     }
   }
 
-  /// 选择生日日期
   Future<void> _selectBirthDate(TextEditingController controller) async {
-    DateTime? initialDate;
-
-    // 尝试解析当前文本中的日期
-    if (controller.text != '未设置') {
+    DateTime initialDate;
+    if (controller.text.isNotEmpty && controller.text != '未设置') {
       try {
         List<String> parts = controller.text.split('-');
         if (parts.length == 3) {
-          initialDate = DateTime(
-              int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+          initialDate = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+        } else {
+          initialDate = DateTime.now();
         }
       } catch (e) {
-        // 解析失败则使用当前日期
         initialDate = DateTime.now();
       }
     } else {
       initialDate = DateTime.now();
     }
 
-    // 确保日期不会是未来的日期
-    initialDate =
-        initialDate!.isAfter(DateTime.now()) ? DateTime.now() : initialDate;
+    if (initialDate.isAfter(DateTime.now())) initialDate = DateTime.now();
 
     final DateTime? picked = await showDatePicker(
       context: Get.context!,
@@ -535,12 +585,10 @@ class UserProfilePage extends GetView<UserController> {
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       locale: const Locale('zh', 'CN'),
-      builder: (BuildContext context, Widget? child) {
+      builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light().copyWith(
-              primary: Color(0xFF409EFF), // 使用用户的主题色
-            ),
+            colorScheme: const ColorScheme.light(primary: AppColors.primary),
           ),
           child: child!,
         );
@@ -548,20 +596,7 @@ class UserProfilePage extends GetView<UserController> {
     );
 
     if (picked != null) {
-      controller.text =
-          "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
-    }
-  }
-
-  /// 获取性别文本描述
-  String _getGenderText(int? gender) {
-    switch (gender) {
-      case 0:
-        return '女';
-      case 1:
-        return '男';
-      default:
-        return '未设置';
+      controller.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
     }
   }
 }

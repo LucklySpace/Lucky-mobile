@@ -78,10 +78,10 @@ enum IMessageContentType {
   const IMessageContentType(this.code, this.type);
 
   // 通过code获取MessageContentType的工厂方法
-  static IMessageContentType? fromCode(int code) {
+  static IMessageContentType fromCode(int code) {
     return IMessageContentType.values.firstWhere(
       (type) => type.code == code,
-      orElse: () => throw ArgumentError('未找到对应的消息内容类型: $code'),
+      orElse: () => IMessageContentType.unknown,
     );
   }
 }

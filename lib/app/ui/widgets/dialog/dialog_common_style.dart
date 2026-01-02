@@ -1,132 +1,111 @@
-// import 'package:blog/base/get/get_extension.dart';
-// import 'package:blog/res/button_style.dart';
-// import 'package:blog/res/style.dart';
-// import 'package:blog/widget/over_scroll_behavior.dart';
-// import 'package:flutter/material.dart';
-// import 'package:get/get.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_im/constants/app_colors.dart';
+import 'package:flutter_im/constants/app_sizes.dart';
+import 'package:get/get.dart';
+import 'dialog_base.dart';
 
-// /// @class : CommonDialog
-// /// @date : 2021/08/27
-// /// @name : jhf
-// /// @description :公共加载弹窗
-// class CommonDialog extends StatelessWidget {
+/// @class : DialogCommonStyle
+/// @description : 公共确认弹窗
+class DialogCommonStyle extends StatelessWidget {
+  final String title;
+  final String content;
+  final String? backText; // Cancel text
+  final String? nextText; // Confirm text
+  final VoidCallback? backTap;
+  final VoidCallback? nextTap;
+  final bool backVisible;
+  final bool nextVisible;
 
-//   ///标题
-//   String title = '';
-//   ///内容
-//   String content = '';
-//   ///左侧文字
-//   String backText = '';
-//   ///右侧文字
-//   String nextText = '';
-//   ///左侧事件
-//   VoidCallback? backTap;
-//   ///右侧事件
-//   VoidCallback? nextTap;
-//   ///左侧是否隐藏
-//   bool backVisible = true;
-//   ///右侧是否隐藏
-//   bool nextVisible = true;
+  const DialogCommonStyle({
+    Key? key,
+    this.title = '',
+    this.content = '',
+    this.backText,
+    this.nextText,
+    this.backTap,
+    this.nextTap,
+    this.backVisible = true,
+    this.nextVisible = true,
+  }) : super(key: key);
 
-//   CommonDialog({
-//     Key? key,
-//     this.title = '',
-//     this.content = '',
-//     this.backText = '',
-//     this.nextText = '',
-//     this.backVisible = true,
-//     this.nextVisible = true,
-//     this.backTap,
-//     this.nextTap,
-//   }) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return BaseDialog(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          const SizedBox(height: AppSizes.spacing16),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: AppSizes.font18,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing16, vertical: AppSizes.spacing12),
+            child: Text(
+              content,
+              style: const TextStyle(
+                fontSize: AppSizes.font16,
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const Divider(height: AppSizes.spacing1, color: AppColors.divider),
+          SizedBox(
+            height: AppSizes.spacing48,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (backVisible)
+                  Expanded(
+                    child: _buildTextButton(
+                      context,
+                      backTap ?? () => Get.back(),
+                      backText ?? '取消',
+                      AppColors.textSecondary,
+                    ),
+                  ),
+                if (backVisible && nextVisible)
+                  const VerticalDivider(width: AppSizes.spacing1, color: AppColors.divider),
+                if (nextVisible)
+                  Expanded(
+                    child: _buildTextButton(
+                      context,
+                      nextTap,
+                      nextText ?? '确定',
+                      AppColors.primary,
+                    ),
+                  ),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Material(
-//         ///透明样式
-//         type: MaterialType.transparency,
-//         ///dialog居中
-//         child: Center(
-//             ///取消ListView滑动阴影
-//             child: ScrollConfiguration(
-//                 behavior: OverScrollBehavior(),
-//                 ///ListView 的shrinkWrap属性可适应高度（有多少占多少）
-//                 child: ListView(
-//                   shrinkWrap: true,
-//                   children: [
-//                     ///背景及内容、边距、圆角等，必须包裹在ListView中
-//                     Container(
-//                       width: double.infinity,
-//                       margin: const EdgeInsets.symmetric(horizontal: 24),
-//                       child: Container(
-//                         decoration: const ShapeDecoration(
-//                           color: Colors.white,
-//                           shape: RoundedRectangleBorder(
-//                             borderRadius: BorderRadius.all(
-//                               Radius.circular(10.0),
-//                             ),
-//                           ),
-//                         ),
-//                         child: Column(
-//                           mainAxisAlignment: MainAxisAlignment.start,
-//                           crossAxisAlignment: CrossAxisAlignment.center,
-//                           children: <Widget>[
-//                             ///标题、内容
-//                             Box.vBox15,
-//                             Text(
-//                               title,
-//                               style: Styles.style_black_18_bold500,
-//                             ),
-//                             Padding(
-//                               padding: const EdgeInsets.symmetric(
-//                                   horizontal: 16, vertical: 12),
-//                               child: Text(
-//                                 content,
-//                                 style: Styles.style_6A6969_16,
-//                               ),
-//                             ),
-//                             DividerStyle.divider1Half,
-
-//                             ///确定、取消按钮
-//                             Flex(
-//                               mainAxisAlignment: MainAxisAlignment.spaceAround,
-//                               direction: Axis.horizontal,
-//                               children: [
-//                                 ///对半分
-//                                 _buildTextButton(backTap, backText , backVisible),
-//                                 _buildTextButton(nextTap, nextText , nextVisible)
-//                               ],
-//                             )
-//                           ],
-//                         ),
-//                       ),
-//                     ),
-//                   ],
-//                 ))));
-//   }
-
-//   ///此处使用方法重新创建的原因是因为此处不需要频繁更新，不会造成过度创建
-//   _buildTextButton(VoidCallback? tap, String text , bool show) {
-//     return Visibility(
-//       visible: show,
-//         child: Expanded(
-//             flex: 1,
-//             child: TextButton(
-//               onPressed: () {
-//                 Get.dismiss();
-//                 if(tap != null){
-//                   tap();
-//                 }
-//               },
-//               style: ButtonStyles.getNoShapeStyle(),
-//               child: Container(
-//                 alignment: Alignment.center,
-//                 height: 60,
-//                 child: Text(
-//                   text,
-//                   style: Styles.style_black_16,
-//                 ),
-//               ),
-//             )));
-//   }
-// }
+  Widget _buildTextButton(
+      BuildContext context, VoidCallback? onTap, String text, Color color) {
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        padding: EdgeInsets.zero,
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: AppSizes.font16,
+          color: color,
+        ),
+      ),
+    );
+  }
+}

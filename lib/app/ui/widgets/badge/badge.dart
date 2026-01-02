@@ -3,18 +3,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
+
 /// 徽章组件：支持 status/color/dot/count/max/offset 等特性
-/// 使用示例：
-/// Badge(
-///   child: Icon(Icons.mail),
-///   count: 5,
-///   max: 99,
-/// )
-///
-/// Badge(
-///   status: BadgeStatus.success,
-///   text: '在线',
-/// )
 class CustomBadge extends StatefulWidget {
   /// 包裹的子组件（相当于 Vue 的 default slot）
   final Widget? child;
@@ -72,8 +64,8 @@ class CustomBadge extends StatefulWidget {
     this.title,
     this.ripple = false,
     this.offset = Offset.zero,
-    this.badgeMinSize = 18.0,
-    this.gap = 4.0,
+    this.badgeMinSize = AppSizes.font12 * 1.5,
+    this.gap = AppSizes.spacing4,
   }) : super(key: key);
 
   @override
@@ -117,19 +109,19 @@ class _BadgeState extends State<CustomBadge>
     if (widget.status != null) {
       switch (widget.status!) {
         case BadgeStatus.success:
-          return const Color(0xFF52C41A);
+          return AppColors.success;
         case BadgeStatus.processing:
-          return Theme.of(context).colorScheme.primary;
+          return AppColors.primary;
         case BadgeStatus.error:
-          return const Color(0xFFFF4D4F);
+          return AppColors.error;
         case BadgeStatus.warning:
-          return const Color(0xFFFAAD14);
+          return AppColors.warning;
         case BadgeStatus.normal:
         default:
-          return const Color(0xFFBFBFBF);
+          return AppColors.textHint;
       }
     }
-    return widget.color ?? const Color(0xFFFF4D4F); // 默认红色
+    return widget.color ?? AppColors.error; // 默认红色
   }
 
   bool get _shouldShowCount {
@@ -163,12 +155,13 @@ class _BadgeState extends State<CustomBadge>
           mainAxisSize: MainAxisSize.min,
           children: [
             dot,
-            if (text.isNotEmpty) SizedBox(width: 6),
+            if (text.isNotEmpty) SizedBox(width: AppSizes.spacing6),
             if (text.isNotEmpty)
               Text(
                 text,
                 style: TextStyle(
-                    fontSize: 14, color: widget.color ?? Colors.black87),
+                    fontSize: AppSizes.font14,
+                    color: widget.color ?? AppColors.textPrimary),
               ),
           ],
         );
@@ -187,10 +180,10 @@ class _BadgeState extends State<CustomBadge>
         final bool singleOrDouble = content.length <= 2;
         final double height = widget.badgeMinSize;
         final double minWidth = widget.badgeMinSize;
-        final double paddingH = singleOrDouble ? 0 : 6.0;
+        final double paddingH = singleOrDouble ? 0 : AppSizes.spacing6;
         final double width = singleOrDouble
             ? minWidth
-            : max(minWidth, content.length * 8.0 + paddingH);
+            : max(minWidth, content.length * AppSizes.spacing8 + paddingH);
 
         return Container(
           constraints: BoxConstraints(minWidth: minWidth, minHeight: height),
@@ -201,7 +194,7 @@ class _BadgeState extends State<CustomBadge>
             borderRadius: BorderRadius.circular(height / 2),
             boxShadow: [
               BoxShadow(
-                  color: Colors.black.withOpacity(0.12),
+                  color: AppColors.shadow,
                   blurRadius: 2,
                   offset: const Offset(0, 1)),
             ],
@@ -211,8 +204,8 @@ class _BadgeState extends State<CustomBadge>
             content,
             style: widget.countTextStyle ??
                 const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
+                    color: AppColors.textWhite,
+                    fontSize: AppSizes.font10,
                     fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
@@ -271,8 +264,8 @@ class _BadgeState extends State<CustomBadge>
             widget.child!,
             // 徽章浮在 child 右上，一般会超出 child 区域
             Positioned(
-              top: -6,
-              right: -6,
+              top: -AppSizes.spacing6,
+              right: -AppSizes.spacing6,
               child: badgeWidget,
             ),
           ],

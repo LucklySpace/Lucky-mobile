@@ -49,11 +49,29 @@ abstract class Routes {
   static const LOGIN_AUTHORIZATION = '/login_authorization';
 
   /// 好友信息
-  static var FRIEND_PROFILE = '/friend_profile';
+  static const FRIEND_PROFILE = '/friend_profile';
 
   /// 用户资料
-  static var USER_PROFILE = '/user_profile';
+  static const USER_PROFILE = '/user_profile';
 
   /// 视频通话
-  static var VIDEO_CALL = '/video_call';
+  static const VIDEO_CALL = '/video_call';
+
+  /// 钱包
+  static const WALLET = '/wallet';
+
+  /// 支付
+  static const PAYMENT = '/payment';
+
+  /// 转账
+  static const TRANSFER = '/transfer';
+
+  /// 交易详情
+  static const TRANSACTION_DETAIL = '/transaction_detail';
+
+  /// 交易结果
+  static const WALLET_RESULT = '/wallet_result';
+
+  /// 收款
+  static const WALLET_RECEIVE = '/wallet_receive';
 }

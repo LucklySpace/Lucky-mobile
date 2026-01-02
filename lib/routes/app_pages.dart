@@ -14,7 +14,13 @@ import '../app/ui/pages/search/search_page.dart';
 import '../app/ui/pages/my/user_profile_page.dart';
 import '../app/ui/pages/unknow/unknown_page.dart';
 import '../app/ui/pages/video/video_call_page.dart';
+import '../app/ui/pages/wallet/wallet_payment_page.dart';
+import '../app/ui/pages/wallet/wallet_transfer_page.dart';
+import '../app/ui/pages/wallet/wallet_transaction_detail_page.dart';
+import '../app/ui/pages/wallet/wallet_result_page.dart';
+import '../app/ui/pages/wallet/wallet_receive_page.dart';
 import '../app/ui/pages/webview/webview_page.dart';
+import '../app/ui/pages/wallet/wallet_page.dart';
 import 'app_route_auth.dart';
 import 'app_routes.dart';
 
@@ -152,10 +158,58 @@ class AppPages {
       curve: _defaultCurve,
     ),
 
-    /// 视频通话页面：处理视频通话功能
+    /// 视频通话页面
     GetPage(
       name: Routes.VIDEO_CALL,
       page: () => const VideoCallPage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+    ),
+
+    /// 钱包页面
+    GetPage(
+      name: Routes.WALLET,
+      page: () => const WalletPage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+    ),
+
+    /// 转账页面
+    GetPage(
+      name: Routes.TRANSFER,
+      page: () => const WalletTransferPage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+    ),
+
+    /// 支付页面
+    GetPage(
+      name: Routes.PAYMENT,
+      page: () => const WalletPaymentPage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+    ),
+
+    /// 交易详情页面
+    GetPage(
+      name: Routes.TRANSACTION_DETAIL,
+      page: () => const WalletTransactionDetailPage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+    ),
+
+    /// 交易结果页面
+    GetPage(
+      name: Routes.WALLET_RESULT,
+      page: () => const WalletResultPage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+    ),
+
+    /// 收款页面
+    GetPage(
+      name: Routes.WALLET_RECEIVE,
+      page: () => const WalletReceivePage(),
       transitionDuration: _defaultTransitionDuration,
       curve: _defaultCurve,
     ),

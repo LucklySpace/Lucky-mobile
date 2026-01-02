@@ -1,10 +1,14 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:flutter/services.dart'; // 用于Clipboard
+import 'package:get/get.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../models/message_receive.dart';
+import '../icon/icon_font.dart';
 
 class MessageBubble extends StatefulWidget {
   final IMessage message;
@@ -29,14 +33,14 @@ class _MessageBubbleState extends State<MessageBubble> {
   final List<TapGestureRecognizer> _recognizers = [];
 
   static final _textStyle = const TextStyle(
-    fontSize: 16,
-    color: Colors.black87,
+    fontSize: AppSizes.font16,
+    color: AppColors.textPrimary,
     height: 1.25,
   );
 
   static final _linkStyle = const TextStyle(
-    fontSize: 16,
-    color: Colors.blue,
+    fontSize: AppSizes.font16,
+    color: AppColors.primary,
     decoration: TextDecoration.underline,
   );
 
@@ -61,35 +65,40 @@ class _MessageBubbleState extends State<MessageBubble> {
     final isMe = widget.isMe;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing16, vertical: AppSizes.spacing8),
       child: Row(
         mainAxisAlignment:
-        isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isMe) _buildAvatar(),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSizes.spacing8),
           Flexible(
             child: Column(
               crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 _buildNameRow(),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSizes.spacing4),
                 GestureDetector(
                   onLongPress: () {
                     _showPopupMenu(context);
                   },
                   child: Container(
                     key: _containerKey, // 添加key以便获取容器位置
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(AppSizes.spacing8),
                     decoration: BoxDecoration(
-                      color: isMe ? Colors.blue[100] : Colors.grey[200],
+                      color: isMe
+                          ? AppColors.primary.withOpacity(0.2)
+                          : AppColors.surface,
                       borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(16),
-                        topRight: const Radius.circular(16),
-                        bottomLeft: Radius.circular(isMe ? 16 : 4),
-                        bottomRight: Radius.circular(isMe ? 4 : 16),
+                        topLeft: const Radius.circular(AppSizes.radius16),
+                        topRight: const Radius.circular(AppSizes.radius16),
+                        bottomLeft: Radius.circular(
+                            isMe ? AppSizes.radius16 : AppSizes.radius4),
+                        bottomRight: Radius.circular(
+                            isMe ? AppSizes.radius4 : AppSizes.radius16),
                       ),
                     ),
                     child: _buildMessageContent(context),
@@ -98,7 +107,7 @@ class _MessageBubbleState extends State<MessageBubble> {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSizes.spacing8),
           if (isMe) _buildAvatar(),
         ],
       ),
@@ -112,8 +121,10 @@ class _MessageBubbleState extends State<MessageBubble> {
   /// 菜单宽度自适应项目数量，位置避免超出屏幕边界
   /// 调整了菜单高度以适应更小的菜单项
   void _showPopupMenu(BuildContext context) async {
-    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final RenderBox containerBox = _containerKey.currentContext!.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RenderBox containerBox =
+        _containerKey.currentContext!.findRenderObject() as RenderBox;
     final Offset position = containerBox.localToGlobal(
       Offset.zero,
       ancestor: overlay,
@@ -127,7 +138,7 @@ class _MessageBubbleState extends State<MessageBubble> {
       _buildVerticalDivider(),
       _buildPopupMenuItem('forward', Icons.forward, '转发'),
     ];
-    
+
     // 如果是自己的消息，添加撤回选项
     if (widget.isMe) {
       menuItems.insert(3, _buildVerticalDivider());
@@ -135,22 +146,23 @@ class _MessageBubbleState extends State<MessageBubble> {
     }
 
     // 计算菜单宽度：每个项目40px宽 + 分割线1px宽 + 项目间间距
-    final double itemWidth = 40.0; // 从60减少到40
-    final double dividerWidth = 1.0;
-    final double menuWidth = menuItems.length * itemWidth + 
-                            (menuItems.length ~/ 2) * dividerWidth;
+    final double itemWidth = AppSizes.spacing40; // 从60减少到40
+    final double dividerWidth = AppSizes.spacing1;
+    final double menuWidth = ((menuItems.length + 1) ~/ 2) * itemWidth +
+        (menuItems.length ~/ 2) * dividerWidth;
 
     // 确保菜单位置不会超出屏幕边界
-    double leftPosition = position.dx + containerBox.size.width / 2 - menuWidth / 2;
-    
+    double leftPosition =
+        position.dx + containerBox.size.width / 2 - menuWidth / 2;
+
     // 避免左侧超出屏幕
-    if (leftPosition < 10) {
-      leftPosition = 10;
+    if (leftPosition < AppSizes.spacing10) {
+      leftPosition = AppSizes.spacing10;
     }
-    
+
     // 避免右侧超出屏幕
-    if (leftPosition + menuWidth > overlay.size.width - 10) {
-      leftPosition = overlay.size.width - menuWidth - 10;
+    if (leftPosition + menuWidth > overlay.size.width - AppSizes.spacing10) {
+      leftPosition = overlay.size.width - menuWidth - AppSizes.spacing10;
     }
 
     // 创建一个自定义的菜单界面，带有小箭头指向消息气泡
@@ -168,20 +180,20 @@ class _MessageBubbleState extends State<MessageBubble> {
               children: [
                 Positioned(
                   left: leftPosition,
-                  top: position.dy - 100, // 从100减少到80以适应更小的菜单项
+                  top: position.dy - AppSizes.spacing80, // 从100减少到80以适应更小的菜单项
                   child: CustomPaint(
                     painter: BubbleMenuPainter(),
                     child: Container(
                       width: menuWidth, // 自适应宽度
-                      height: 60, // 从80减少到60以适应更小的菜单项
+                      height: AppSizes.spacing60, // 从80减少到60以适应更小的菜单项
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(AppSizes.radius8),
+                        boxShadow: const [
                           BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 8,
-                            offset: Offset(0, 2),
+                            color: AppColors.shadow,
+                            blurRadius: AppSizes.radius8,
+                            offset: Offset(0, AppSizes.spacing2),
                           ),
                         ],
                       ),
@@ -208,9 +220,9 @@ class _MessageBubbleState extends State<MessageBubble> {
   /// 调整了高度以适应更小的菜单项
   Widget _buildVerticalDivider() {
     return Container(
-      width: 1,
-      height: 20, // 从30减少到20以适应更小的菜单项
-      color: Colors.grey[300],
+      width: AppSizes.spacing1,
+      height: AppSizes.spacing20, // 从30减少到20以适应更小的菜单项
+      color: AppColors.divider,
     );
   }
 
@@ -222,7 +234,7 @@ class _MessageBubbleState extends State<MessageBubble> {
       onTap: () {
         Navigator.of(context).pop(); // 关闭菜单
         // 延迟执行操作，确保菜单已关闭
-        Future.delayed(Duration(milliseconds: 100), () {
+        Future.delayed(const Duration(milliseconds: 100), () {
           switch (value) {
             case 'copy':
               _copyMessage();
@@ -240,18 +252,18 @@ class _MessageBubbleState extends State<MessageBubble> {
         });
       },
       child: Container(
-        width: 40,  // 从60减少到40
-        padding: EdgeInsets.symmetric(horizontal: 2),
+        width: AppSizes.spacing40, // 从60减少到40
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing2),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: Color(0xFF409EFF)), // 图标从20减少到16
-            SizedBox(height: 2), // 间距从3减少到2
+            Icon(icon, size: AppSizes.iconSmall, color: AppColors.primary), // 图标从20减少到16
+            const SizedBox(height: AppSizes.spacing2), // 间距从3减少到2
             Text(
               text,
-              style: TextStyle(
-                fontSize: 10, // 字体从12减少到10
-                color: Colors.black87,
+              style: const TextStyle(
+                fontSize: AppSizes.font10, // 字体从12减少到10
+                color: AppColors.textPrimary,
               ),
             ),
           ],
@@ -261,7 +273,8 @@ class _MessageBubbleState extends State<MessageBubble> {
   }
 
   void _copyMessage() {
-    final text = TextMessageBody.fromMessageBody(widget.message.messageBody)?.text ?? '';
+    final text =
+        TextMessageBody.fromMessageBody(widget.message.messageBody)?.text ?? '';
     if (text.isNotEmpty) {
       Clipboard.setData(ClipboardData(text: text));
       Get.snackbar('提示', '消息已复制到剪贴板');
@@ -285,8 +298,8 @@ class _MessageBubbleState extends State<MessageBubble> {
 
   Widget _buildNameRow() {
     final nameStyle = TextStyle(
-      fontSize: 12,
-      color: widget.isMe ? Colors.grey[600] : Colors.grey[500],
+      fontSize: AppSizes.font12,
+      color: widget.isMe ? AppColors.textSecondary : AppColors.textHint,
       fontWeight: FontWeight.w500,
     );
 
@@ -295,10 +308,10 @@ class _MessageBubbleState extends State<MessageBubble> {
       children: [
         if (!widget.isMe) ...[
           Text(widget.name, style: nameStyle),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSizes.spacing8),
         ],
         if (widget.isMe) ...[
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSizes.spacing8),
           Text(widget.name, style: nameStyle),
         ],
       ],
@@ -483,22 +496,26 @@ class _MessageBubbleState extends State<MessageBubble> {
         }
       },
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          widget.avatar,
-          width: 40,
-          height: 40,
+        borderRadius: BorderRadius.circular(AppSizes.radius8),
+        child: CachedNetworkImage(
+          imageUrl: widget.avatar,
+          width: AppSizes.spacing40,
+          height: AppSizes.spacing40,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            // 出错时显示一个简单的占位
-            return Container(
-              width: 40,
-              height: 40,
-              color: Colors.grey.shade300,
-              alignment: Alignment.center,
-              child: Icon(Icons.person, color: Colors.grey.shade600, size: 20),
-            );
-          },
+          placeholder: (context, url) => Container(
+            color: AppColors.border,
+            child: Iconfont.buildIcon(
+                icon: Iconfont.person,
+                size: AppSizes.iconMedium,
+                color: AppColors.textHint),
+          ),
+          errorWidget: (context, url, error) => Container(
+            color: AppColors.border,
+            child: Iconfont.buildIcon(
+                icon: Iconfont.person,
+                size: AppSizes.iconMedium,
+                color: AppColors.textHint),
+          ),
         ),
       ),
     );
@@ -529,26 +546,26 @@ class BubbleMenuPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white
+      ..color = AppColors.surface
       ..style = PaintingStyle.fill;
 
     final path = Path();
-    
+
     // 绘制气泡菜单主体（圆角矩形）
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height - 6); // 从8减少到6
-    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(10));
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height - AppSizes.spacing6); // 从8减少到6
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(AppSizes.radius10));
     path.addRRect(rrect);
-    
+
     // 绘制小箭头（指向消息气泡），位置根据菜单宽度自动居中
     // 调整了箭头大小以适应更小的菜单
     final arrowPath = Path();
     final centerX = size.width / 2;
-    arrowPath.moveTo(centerX - 6, size.height - 6); // 从8减少到6
+    arrowPath.moveTo(centerX - AppSizes.spacing6, size.height - AppSizes.spacing6); // 从8减少到6
     arrowPath.lineTo(centerX, size.height);
-    arrowPath.lineTo(centerX + 6, size.height - 6); // 从8减少到6
-    arrowPath.lineTo(centerX - 6, size.height - 6); // 从8减少到6
-    path.addPath(arrowPath, Offset(0, 0));
-    
+    arrowPath.lineTo(centerX + AppSizes.spacing6, size.height - AppSizes.spacing6); // 从8减少到6
+    arrowPath.lineTo(centerX - AppSizes.spacing6, size.height - AppSizes.spacing6); // 从8减少到6
+    path.addPath(arrowPath, const Offset(0, 0));
+
     canvas.drawPath(path, paint);
   }
 

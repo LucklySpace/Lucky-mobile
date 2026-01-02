@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../api/api_service.dart';
 import '../../../controller/chat_controller.dart';
@@ -17,18 +19,18 @@ import '../../../models/friend.dart';
 class FriendProfilePage extends StatelessWidget {
   // 常量定义
   static const _avatarSize = 80.0; // 头像尺寸
-  static const _avatarBorderRadius = 12.0; // 头像圆角
-  static const _padding = EdgeInsets.all(16); // 内容边距
-  static const _dividerColor = Color.fromARGB(255, 238, 236, 236); // 分割线颜色
+  static const _avatarBorderRadius = AppSizes.radius12; // 头像圆角
+  static const _padding = EdgeInsets.all(AppSizes.spacing16); // 内容边距
+  static const _dividerColor = AppColors.divider; // 分割线颜色
   static const _nameStyle =
-      TextStyle(fontSize: 22, fontWeight: FontWeight.w600); // 名称样式
-  static const _infoStyle = TextStyle(fontSize: 14, color: Colors.grey); // 信息样式
+      TextStyle(fontSize: AppSizes.font22, fontWeight: FontWeight.w600); // 名称样式
+  static const _infoStyle = TextStyle(fontSize: AppSizes.font14, color: AppColors.textSecondary); // 信息样式
   static const _idBadgePadding =
-      EdgeInsets.symmetric(horizontal: 8, vertical: 4); // ID 徽章边距
+      EdgeInsets.symmetric(horizontal: AppSizes.spacing8, vertical: AppSizes.spacing4); // ID 徽章边距
   static const _buttonHeight = 50.0; // 按钮高度
-  static const _buttonSpacing = 12.0; // 按钮间距
+  static const _buttonSpacing = AppSizes.spacing12; // 按钮间距
   static const _errorStyle =
-      TextStyle(fontSize: 16, color: Colors.grey); // 错误提示样式
+      TextStyle(fontSize: AppSizes.font16, color: AppColors.textSecondary); // 错误提示样式
   static const _keyUserId = 'userId'; // 存储用户 ID 的键
 
   const FriendProfilePage({super.key});
@@ -66,7 +68,7 @@ class FriendProfilePage extends StatelessWidget {
                 style: Theme.of(context)
                         .textTheme
                         .bodyMedium
-                        ?.copyWith(color: Colors.grey) ??
+                        ?.copyWith(color: AppColors.textSecondary) ??
                     _errorStyle,
               ),
             );
@@ -106,8 +108,8 @@ class FriendProfilePage extends StatelessWidget {
         const PopupMenuItem<String>(
           value: 'delete',
           child: ListTile(
-            leading: Icon(Icons.delete, color: Colors.red),
-            title: Text('删除好友', style: TextStyle(color: Colors.red)),
+            leading: Icon(Icons.delete, color: AppColors.error),
+            title: Text('删除好友', style: TextStyle(color: AppColors.error)),
           ),
         ),
       ],
@@ -120,7 +122,7 @@ class FriendProfilePage extends StatelessWidget {
   Widget _buildHeader(BuildContext context, Friend friend) {
     return Container(
       padding: _padding,
-      color: Colors.white,
+      color: AppColors.surface,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -133,19 +135,19 @@ class FriendProfilePage extends StatelessWidget {
               height: _avatarSize,
               fit: BoxFit.cover,
               placeholder: (context, url) => Container(
-                color: Colors.grey[200],
-                child: const Icon(Icons.person, size: 40, color: Colors.grey),
+                color: AppColors.background,
+                child: const Icon(Icons.person, size: AppSizes.spacing40, color: AppColors.textHint),
               ),
               errorWidget: (context, url, error) {
                 debugPrint('加载头像失败: $error');
                 return Container(
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.error, size: 40, color: Colors.grey),
+                  color: AppColors.background,
+                  child: const Icon(Icons.error, size: AppSizes.spacing40, color: AppColors.textHint),
                 );
               },
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSizes.spacing16),
 
           /// 用户信息
           Expanded(
@@ -160,34 +162,34 @@ class FriendProfilePage extends StatelessWidget {
                           ?.copyWith(fontWeight: FontWeight.w600) ??
                       _nameStyle,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSizes.spacing8),
                 if (friend.flag == 1)
                   Container(
                     padding: _idBadgePadding,
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(4),
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(AppSizes.radius4),
                     ),
                     child: Text(
                       'ID: ${friend.friendId ?? ''}',
                       style: Theme.of(context)
                               .textTheme
                               .bodySmall
-                              ?.copyWith(color: Colors.grey[600]) ??
+                              ?.copyWith(color: AppColors.textSecondary) ??
                           _infoStyle,
                     ),
                   ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSizes.spacing8),
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
+                    const Icon(Icons.location_on, size: AppSizes.iconSmall, color: AppColors.textSecondary),
+                    const SizedBox(width: AppSizes.spacing4),
                     Text(
                       friend.location ?? '未知地点',
                       style: Theme.of(context)
                               .textTheme
                               .bodySmall
-                              ?.copyWith(color: Colors.grey[600]) ??
+                              ?.copyWith(color: AppColors.textSecondary) ??
                           _infoStyle,
                     ),
                   ],
@@ -224,9 +226,9 @@ class FriendProfilePage extends StatelessWidget {
           ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing10),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
         child: Column(
           children: buttons
               .asMap()
@@ -250,18 +252,18 @@ class FriendProfilePage extends StatelessWidget {
       height: _buttonHeight,
       width: double.infinity,
       child: ElevatedButton.icon(
-        icon: Icon(data.icon, size: 20),
+        icon: Icon(data.icon, size: AppSizes.font20),
         label: Text(
           data.text,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 16),
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: AppSizes.font16),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.surface,
           foregroundColor: Theme.of(context).colorScheme.onSurface,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppSizes.radius8),
             side: BorderSide(color: Theme.of(context).colorScheme.outline),
           ),
         ),

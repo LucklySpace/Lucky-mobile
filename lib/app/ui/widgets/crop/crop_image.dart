@@ -1,8 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_im/constants/app_sizes.dart';
 import 'package:get/get.dart';
 import 'package:image_cropper/image_cropper.dart';
+
+import '../../../../constants/app_colors.dart';
 
 /// 头像裁剪组件
 ///
@@ -10,10 +13,6 @@ import 'package:image_cropper/image_cropper.dart';
 /// 支持圆形/方形裁剪、平台适配（Android/iOS UI 定制）、
 /// 错误处理（取消/失败返回 null）和异步返回裁剪后的 File。
 /// 可靠性增强：添加超时检查、文件存在验证和异常捕获。
-///
-/// 使用示例：
-/// final File? cropped = await CropperImage.crop(originalFile);
-/// if (cropped != null) { /* 处理文件 */ }
 class CropperImage {
   /// 裁剪头像
   ///
@@ -25,13 +24,14 @@ class CropperImage {
   /// [compressQuality] 压缩质量，默认 90%
   /// 返回: 裁剪后的 File 或 null（取消/失败）
   static Future<File?> crop(
-      File sourceFile,int timeout, {
-        double? aspectRatio = 1.0,
-        CropStyle cropStyle = CropStyle.circle,
-        int maxWidth = 512,
-        int maxHeight = 512,
-        int compressQuality = 90,
-      }) async {
+    File sourceFile,
+    int timeout, {
+    double? aspectRatio = 1.0,
+    CropStyle cropStyle = CropStyle.circle,
+    int maxWidth = 512,
+    int maxHeight = 512,
+    int compressQuality = 90,
+  }) async {
     try {
       // 验证源文件存在
       if (!await sourceFile.exists()) {
@@ -47,20 +47,22 @@ class CropperImage {
         maxWidth: maxWidth,
         maxHeight: maxHeight,
         compressQuality: compressQuality,
-        compressFormat: ImageCompressFormat.png, // 默认 JPG 格式
+        compressFormat: ImageCompressFormat.png,
+        // 默认 JPG 格式
         uiSettings: [
           // Android UI 配置：自定义颜色/标题，确保主题一致
           AndroidUiSettings(
             toolbarTitle: '裁剪头像',
-            toolbarColor: Get.theme.primaryColor,
-            toolbarWidgetColor: Colors.white,
+            toolbarColor: AppColors.primary,
+            toolbarWidgetColor: AppColors.textWhite,
             initAspectRatio: CropAspectRatioPreset.square,
             lockAspectRatio: true,
-            hideBottomControls: true, // 隐藏底部工具栏
-            dimmedLayerColor: Colors.black54,
+            hideBottomControls: true,
+            // 隐藏底部工具栏
+            dimmedLayerColor: AppColors.textPrimary,
             showCropGrid: false,
-            cropFrameColor: Get.theme.primaryColor,
-            cropFrameStrokeWidth: 2,
+            cropFrameColor: AppColors.primary,
+            cropFrameStrokeWidth: AppSizes.spacing2.toInt(),
           ),
           // iOS UI 配置：自定义标题/按钮
           IOSUiSettings(
@@ -77,7 +79,7 @@ class CropperImage {
             aspectRatioPickerButtonHidden: true,
           ),
         ],
-      ).timeout(Duration(seconds: timeout )); // 超时保护，防止卡住
+      ).timeout(Duration(seconds: timeout)); // 超时保护，防止卡住
 
       // 处理结果
       if (croppedFile == null) {

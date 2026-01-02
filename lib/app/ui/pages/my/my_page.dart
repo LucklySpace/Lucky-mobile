@@ -1,6 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../controller/user_controller.dart';
@@ -13,29 +15,39 @@ import '../../widgets/icon/icon_font.dart';
 /// - 支持二维码页面导航，展示用户二维码。
 class MyPage extends StatelessWidget {
   // 常量定义
-  static const _userInfoPadding =
-      EdgeInsets.symmetric(vertical: 20, horizontal: 16); // 用户信息边距
-  static const _avatarSize = 50.0; // 头像尺寸
-  static const _avatarBorderRadius = 6.0; // 头像圆角
-  static const _avatarPlaceholderColor = Colors.grey; // 头像占位颜色
-  static const _usernameStyle =
-      TextStyle(fontSize: 18, fontWeight: FontWeight.bold); // 用户名样式
-  static const _signatureStyle =
-      TextStyle(fontSize: 14, color: Colors.grey); // 个性签名样式
-  static const _listSpacing = 12.0; // 列表间距
+  static const _userInfoPadding = EdgeInsets.symmetric(
+    vertical: AppSizes.spacing20,
+    horizontal: AppSizes.spacing16,
+  ); // 用户信息边距
+  static const _avatarSize = AppSizes.spacing50; // 头像尺寸
+  static const _avatarBorderRadius = AppSizes.radius8; // 头像圆角
+  static const _avatarPlaceholderColor = AppColors.textHint; // 头像占位颜色
+  static const _usernameStyle = TextStyle(
+    fontSize: AppSizes.font18,
+    fontWeight: FontWeight.bold,
+  ); // 用户名样式
+  static const _signatureStyle = TextStyle(
+    fontSize: AppSizes.font14,
+    color: AppColors.textHint,
+  ); // 个性签名样式
+  static const _listSpacing = AppSizes.spacing12; // 列表间距
   static const _defaultUsername = '未登录'; // 默认用户名
   static const _defaultSignature = '这个人很神秘...'; // 默认个性签名
   static const _defaultAvatar = ''; // 默认头像 URL
 
   /// 性别图标映射表
   static const _genderIcons = {
-    '1': Icon(Icons.male, color: Colors.blue, size: 18),
-    '0': Icon(Icons.female, color: Colors.pink, size: 18),
+    '1': Icon(Icons.male, color: AppColors.primary, size: AppSizes.font18),
+    '0': Icon(Icons.female, color: AppColors.female, size: AppSizes.font18),
   };
 
   /// 列表项数据
   static final _listItems = [
-
+    const _ListItemData(
+      icon: Icons.account_balance_wallet,
+      title: '钱包',
+      route: '${Routes.HOME}${Routes.WALLET}',
+    ),
     const _ListItemData(
       icon: Iconfont.search,
       title: '扫一扫',
@@ -96,7 +108,7 @@ class MyPage extends StatelessWidget {
 
         return Container(
           padding: _userInfoPadding,
-          color: Colors.white,
+          color: AppColors.surface,
           child: Row(
             children: [
               /// 头像
@@ -106,31 +118,28 @@ class MyPage extends StatelessWidget {
                   width: _avatarSize,
                   height: _avatarSize,
                   child: avatarUrl.isNotEmpty
-                      ? Image.network(
-                          avatarUrl,
+                      ? CachedNetworkImage(
+                          imageUrl: avatarUrl,
                           fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          },
-                          errorBuilder: (context, error, stackTrace) {
+                          placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) {
                             debugPrint('加载头像失败: $error');
                             return Container(
-                              color: _avatarPlaceholderColor[300],
+                              color: _avatarPlaceholderColor.withOpacity(0.3),
                               child: const Icon(Icons.person,
-                                  size: 45, color: Colors.white),
+                                  size: AppSizes.spacing45, color: AppColors.white),
                             );
                           },
                         )
                       : Container(
-                          color: _avatarPlaceholderColor[300],
+                          color: _avatarPlaceholderColor.withOpacity(0.3),
                           child: const Icon(Icons.person,
-                              size: 45, color: Colors.white),
+                              size: AppSizes.spacing45, color: AppColors.white),
                         ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSizes.spacing16),
 
               /// 用户名和个性签名
               Expanded(
@@ -143,12 +152,12 @@ class MyPage extends StatelessWidget {
                       Row(
                         children: [
                           Text(username, style: _usernameStyle),
-                          const SizedBox(width: 5),
+                          const SizedBox(width: AppSizes.spacing4),
                           if (_genderIcons.containsKey(gender))
                             _genderIcons[gender]!,
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSizes.spacing4),
                       Text(signature, style: _signatureStyle),
                     ],
                   ),
@@ -157,7 +166,7 @@ class MyPage extends StatelessWidget {
 
               /// 二维码按钮
               IconButton(
-                icon: const Icon(Icons.qr_code, size: kSize22),
+                icon: const Icon(Icons.qr_code, size: AppSizes.iconMedium),
                 onPressed: () =>
                     Get.toNamed('${Routes.HOME}${Routes.MY_QR_CODE}'),
               ),
@@ -171,11 +180,11 @@ class MyPage extends StatelessWidget {
   /// 构建功能列表项
   Widget _buildListItems() {
     return Container(
-      color: Colors.white,
+      color: AppColors.surface,
       child: Column(
         children: _listItems
             .map((item) => ListTile(
-                  leading: Icon(item.icon, color: Colors.black87),
+                  leading: Icon(item.icon, color: AppColors.textPrimary),
                   title: Text(item.title),
                   onTap: item.route != null
                       ? () => Get.toNamed(item.route!)

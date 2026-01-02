@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_sizes.dart';
 import '../../../models/chats.dart';
 import '../../widgets/badge/badge.dart';
@@ -8,9 +9,9 @@ import '../../widgets/badge/badge.dart';
 /// 支持自定义头像形状、徽章样式及大小
 class ChatAvatar extends StatelessWidget {
   // 常量定义
-  static const _defaultAvatarSize = kSize50; // 默认头像大小
-  static const _defaultIconSize = kSize40; // 默认占位图标大小
-  static const _defaultBorderRadius = 6.0; // 默认矩形头像圆角
+  static const _defaultAvatarSize = AppSizes.spacing48; // 默认头像大小
+  static const _defaultIconSize = AppSizes.iconLarge; // 默认占位图标大小
+  static const _defaultBorderRadius = AppSizes.radius8; // 默认矩形头像圆角
 
   final Chats chats; // 聊天数据
   final BoxShape avatarShape; // 头像形状
@@ -38,7 +39,7 @@ class ChatAvatar extends StatelessWidget {
       width: _defaultAvatarSize,
       height: _defaultAvatarSize,
       decoration: BoxDecoration(
-        color: Colors.grey[300], // 默认背景色
+        color: AppColors.border, // 默认背景色
         shape: avatarShape,
         borderRadius: avatarShape == BoxShape.rectangle
             ? BorderRadius.circular(_defaultBorderRadius)
@@ -55,10 +56,10 @@ class ChatAvatar extends StatelessWidget {
             : null,
       ),
       child: chats.avatar.isEmpty
-          ? Icon(
+          ? const Icon(
               Icons.person,
               size: _defaultIconSize,
-              color: Colors.grey[700],
+              color: AppColors.textSecondary,
             )
           : null,
     );

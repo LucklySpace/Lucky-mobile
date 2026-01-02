@@ -2,6 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../models/message_receive.dart';
 import '../icon/icon_font.dart';
@@ -14,20 +16,20 @@ import '../icon/icon_font.dart';
 /// - 使用 [Iconfont] 组件加载文件类型图标。
 class FileBubble extends StatelessWidget {
   // 常量定义
-  static const _padding =
-      EdgeInsets.symmetric(horizontal: 16, vertical: 8); // 气泡外边距
-  static const _bubblePadding = EdgeInsets.all(12); // 气泡内边距
-  static const _avatarSize = 40.0; // 头像尺寸
-  static const _avatarBorderRadius = 8.0; // 头像圆角
-  static const _iconSize = 32.0; // 文件图标尺寸
-  static const _nameStyle =
-      TextStyle(fontSize: 14, fontWeight: FontWeight.w500); // 文件名样式
-  static const _sizeStyle =
-      TextStyle(fontSize: 12, color: Colors.grey); // 文件大小样式
-  static const _nameTextStyle =
-      TextStyle(fontSize: 12, fontWeight: FontWeight.w500); // 用户名样式
-  static const _spacing = 8.0; // 水平间距
-  static const _verticalSpacing = 4.0; // 垂直间距
+  static const _padding = EdgeInsets.symmetric(
+      horizontal: AppSizes.spacing16, vertical: AppSizes.spacing8); // 气泡外边距
+  static const _bubblePadding = EdgeInsets.all(AppSizes.spacing12); // 气泡内边距
+  static const _avatarSize = AppSizes.spacing40; // 头像尺寸
+  static const _avatarBorderRadius = AppSizes.radius8; // 头像圆角
+  static const _iconSize = AppSizes.iconLarge; // 文件图标尺寸
+  static const _nameStyle = TextStyle(
+      fontSize: AppSizes.font14, fontWeight: FontWeight.w500); // 文件名样式
+  static const _sizeStyle = TextStyle(
+      fontSize: AppSizes.font12, color: AppColors.textSecondary); // 文件大小样式
+  static const _nameTextStyle = TextStyle(
+      fontSize: AppSizes.font12, fontWeight: FontWeight.w500); // 用户名样式
+  static const _spacing = AppSizes.spacing8; // 水平间距
+  static const _verticalSpacing = AppSizes.spacing4; // 垂直间距
 
   final IMessage message; // 消息对象
   final bool isMe; // 是否为当前用户发送
@@ -87,16 +89,20 @@ class FileBubble extends StatelessWidget {
           height: _avatarSize,
           fit: BoxFit.cover,
           placeholder: (context, url) => Container(
-            color: Colors.grey[200],
+            color: AppColors.border,
             child: Iconfont.buildIcon(
-                icon: Iconfont.person, size: 24, color: Colors.grey),
+                icon: Iconfont.person,
+                size: AppSizes.iconMedium,
+                color: AppColors.textHint),
           ),
           errorWidget: (context, url, error) {
             debugPrint('加载头像失败: $error');
             return Container(
-              color: Colors.grey[200],
+              color: AppColors.border,
               child: Iconfont.buildIcon(
-                  icon: Iconfont.person, size: 24, color: Colors.grey),
+                  icon: Iconfont.person,
+                  size: AppSizes.iconMedium,
+                  color: AppColors.textHint),
             );
           },
         ),
@@ -114,7 +120,7 @@ class FileBubble extends StatelessWidget {
         Text(
           name,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[500],
+                    color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
                   ) ??
               _nameTextStyle,
@@ -128,13 +134,15 @@ class FileBubble extends StatelessWidget {
             padding: _bubblePadding,
             decoration: BoxDecoration(
               color: isMe
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                  : Colors.grey[200],
+                  ? AppColors.primary.withOpacity(0.1)
+                  : AppColors.surface,
               borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(16),
-                topRight: const Radius.circular(16),
-                bottomLeft: Radius.circular(isMe ? 16 : 4),
-                bottomRight: Radius.circular(isMe ? 4 : 16),
+                topLeft: const Radius.circular(AppSizes.radius16),
+                topRight: const Radius.circular(AppSizes.radius16),
+                bottomLeft:
+                    Radius.circular(isMe ? AppSizes.radius16 : AppSizes.radius4),
+                bottomRight:
+                    Radius.circular(isMe ? AppSizes.radius4 : AppSizes.radius16),
               ),
             ),
             child: Row(
@@ -144,7 +152,7 @@ class FileBubble extends StatelessWidget {
                 Iconfont.buildIcon(
                   icon: _getFileIcon(fileBody.suffix ?? ''),
                   size: _iconSize,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: isMe ? AppColors.primary : AppColors.textPrimary,
                 ),
                 const SizedBox(width: _spacing),
 
@@ -163,13 +171,13 @@ class FileBubble extends StatelessWidget {
                                 ?.copyWith(fontWeight: FontWeight.w500) ??
                             _nameStyle,
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSizes.spacing2),
                       Text(
                         _formatFileSize(fileBody.size ?? 0),
                         style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
-                                ?.copyWith(color: Colors.grey) ??
+                                ?.copyWith(color: AppColors.textSecondary) ??
                             _sizeStyle,
                       ),
                     ],
@@ -208,18 +216,12 @@ class FileBubble extends StatelessWidget {
   /// 处理文件操作（打开或下载）
   Future<void> _handleFileAction(BuildContext context, FileMessageBody fileBody,
       _FileAction action) async {
-    // if (fileBody.path != null && action == _FileAction.open) {
-    //   final file = File(fileBody.path!);
-    //   if (await file.exists()) {
-    //     // TODO: 使用 open_file 插件打开文件
-    //     Get.snackbar('提示', '正在打开文件: ${fileBody.name}');
-    //   } else {
-    //     Get.snackbar('提示', '文件不存在，将开始下载');
-    //     await _downloadFile(context, fileBody);
-    //   }
-    // } else {
-    //   await _downloadFile(context, fileBody);
-    // }
+    // TODO: 实现文件打开或下载逻辑
+    if (action == _FileAction.open) {
+      Get.snackbar('提示', '即将打开文件: ${fileBody.name}');
+    } else {
+      await _downloadFile(context, fileBody);
+    }
   }
 
   /// 下载文件
@@ -227,11 +229,7 @@ class FileBubble extends StatelessWidget {
       BuildContext context, FileMessageBody fileBody) async {
     // TODO: 实现文件下载逻辑
     try {
-      // 假设使用 ApiService 下载文件
       Get.snackbar('提示', '开始下载: ${fileBody.name}');
-      // final apiService = Get.find<ApiService>();
-      // final path = await apiService.downloadFile(fileBody.url);
-      // fileBody.path = path;
     } catch (e) {
       Get.snackbar('错误', '下载失败: $e');
     }

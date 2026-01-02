@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_im/constants/app_colors.dart';
+import 'package:flutter_im/constants/app_sizes.dart';
 import 'package:get/get.dart';
+
 
 import '../../../controller/chat_controller.dart';
 import '../../../controller/home_controller.dart';
@@ -54,7 +57,7 @@ class HomePage extends GetView<HomeController> {
       // 根据当前选中的索引设置图标颜色
       final iconColor = index == currentIndex
           ? Theme.of(context).colorScheme.primary
-          : Colors.black38;
+          : AppColors.textHint;
 
       // 计算未读消息数（仅对"消息"页面显示徽章）
       final unreadCount = index == 0
@@ -63,7 +66,7 @@ class HomePage extends GetView<HomeController> {
       return BottomNavigationBarItem(
         icon: CustomBadge(
           child:
-              Iconfont.buildIcon(icon: item.icon, size: 25, color: iconColor),
+              Iconfont.buildIcon(icon: item.icon, size: AppSizes.iconMedium, color: iconColor),
           count: unreadCount,
           max: 99,
         ),

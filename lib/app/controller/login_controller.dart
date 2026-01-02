@@ -5,6 +5,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 
 import '../../routes/app_routes.dart';
+import '../core/handlers/error_handler.dart';
+import 'package:flutter_im/exceptions/app_exception.dart';
 import 'user_controller.dart';
 
 /// 登录类型枚举
@@ -91,7 +93,7 @@ class LoginController extends GetxController
         await _navigateToHome();
       }
     } catch (e) {
-      _showError('登录失败: $e');
+      _showError(e);
     } finally {
       isLoading.value = false;
     }
@@ -102,12 +104,12 @@ class LoginController extends GetxController
   /// 发送验证码
   Future<void> sendVerificationCode() async {
     if (!canSendCode.value || principalController.text.isEmpty) {
-      _showError('请输入手机号');
+      _showError(BusinessException('请输入手机号'));
       return;
     }
 
     if (!_isValidPhoneNumber()) {
-      _showError('请输入正确的手机号格式');
+      _showError(BusinessException('请输入正确的手机号格式'));
       return;
     }
 
@@ -116,7 +118,7 @@ class LoginController extends GetxController
       Get.snackbar('提示', '验证码已发送');
       _startCountdown();
     } catch (e) {
-      _showError('发送验证码失败: $e');
+      _showError(e);
     }
   }
 
@@ -151,7 +153,7 @@ class LoginController extends GetxController
         }
       }
     } catch (e) {
-      Get.log('加载保存的凭证失败: $e');
+      _showError(AppException('加载保存的凭证失败', details: e), silent: true);
     }
   }
 
@@ -179,6 +181,11 @@ class LoginController extends GetxController
   }
 
   // --- 辅助方法 ---
+
+  /// 显示错误提示
+  void _showError(dynamic error, {bool silent = false}) {
+    ErrorHandler.handle(error, silent: silent);
+  }
 
   /// 处理 Tab 切换，清空输入框
   void _handleTabChange() {
@@ -210,7 +217,7 @@ class LoginController extends GetxController
     try {
       Get.offNamed(Routes.HOME);
     } catch (e) {
-      _showError('获取用户信息失败，请重新登录');
+      _showError(BusinessException('获取用户信息失败，请重新登录'));
     }
   }
 
@@ -220,12 +227,12 @@ class LoginController extends GetxController
         credentialsController.text.isEmpty) {
       final message =
           currentAuthType == AuthType.password ? '请输入账号和密码' : '请输入手机号和验证码';
-      _showError(message);
+      _showError(BusinessException(message));
       return false;
     }
 
     if (currentAuthType == AuthType.verifyCode && !_isValidPhoneNumber()) {
-      _showError('请输入正确的手机号格式');
+      _showError(BusinessException('请输入正确的手机号格式'));
       return false;
     }
 
@@ -235,9 +242,4 @@ class LoginController extends GetxController
   /// 验证手机号格式
   bool _isValidPhoneNumber() =>
       RegExp(_phoneRegExp).hasMatch(principalController.text);
-
-  /// 显示错误提示
-  void _showError(String message) {
-    Get.snackbar('提示', message, snackPosition: SnackPosition.TOP);
-  }
 }

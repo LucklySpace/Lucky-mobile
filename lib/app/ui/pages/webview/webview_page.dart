@@ -8,6 +8,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../../config/app_config.dart';
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 
 /// 优化说明：
@@ -33,7 +35,7 @@ class _WebViewPageState extends State<WebViewPage> {
   Completer<void>? _refreshCompleter;
 
   // 可调：进度线的高度
-  static const double kProgressHeight = 3.0;
+  static const double kProgressHeight = AppSizes.spacing3;
 
   @override
   void initState() {
@@ -135,8 +137,8 @@ class _WebViewPageState extends State<WebViewPage> {
 
     // 如果可以返回上一页（Get 层），则回退，否则直接回到首页
     if (Get.previousRoute.isNotEmpty) {
-    //   Get.back();
-    // } else {
+      //   Get.back();
+      // } else {
       Get.offAllNamed(Routes.HOME);
     }
   }
@@ -217,6 +219,8 @@ class _WebViewPageState extends State<WebViewPage> {
           // 当 progress 为 0 或 100 时可以使用 null（不应到这里）
           value: (_progress.clamp(0, 100)) / 100.0,
           minHeight: kProgressHeight,
+          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+          backgroundColor: AppColors.primary.withOpacity(0.2),
         ),
       ),
     );
@@ -232,6 +236,14 @@ class _WebViewPageState extends State<WebViewPage> {
           tooltip: "刷新",
           icon: const Icon(Icons.refresh),
           onPressed: () => _controller.reload(),
+        ),
+        const SizedBox(width: AppSizes.spacing16),
+
+        /// 返回首页按钮
+        IconButton(
+          tooltip: "首页",
+          icon: const Icon(Icons.home),
+          onPressed: () => Get.offAllNamed(Routes.HOME),
         ),
         // 更多操作：在浏览器打开 / 复制链接 / 分享
         PopupMenuButton<int>(

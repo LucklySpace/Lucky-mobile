@@ -5,6 +5,20 @@ typedef JsonLike = Map<String, dynamic>;
 class Objects {
   Objects._();
 
+  /// 安全获取 Map 值，如果为 null 或类型不匹配返回默认值
+  static T? safeGet<T>(Map? map, Object? key, [T? defaultValue]) {
+    if (map == null || !map.containsKey(key)) return defaultValue;
+    final value = map[key];
+    if (value is T) return value;
+    return defaultValue;
+  }
+
+  /// 安全获取 List 元素，防止越界
+  static T? safeElementAt<T>(List<T>? list, int index, [T? defaultValue]) {
+    if (list == null || index < 0 || index >= list.length) return defaultValue;
+    return list[index];
+  }
+
   /// 通用判空：支持 String / Iterable / Map / null / num / bool / 自定义对象 (尝试 toJson/toMap)
   /// [deep] = true 时会递归检查 Map/Iterable 内部元素是否都为空（常用于判断“所有字段都为空”的场景）
   static bool isEmpty(Object? value, {bool deep = false}) {
@@ -41,31 +55,28 @@ class Objects {
 
     // 尝试调用 toJson 或 toMap（常见 pattern）
     try {
+      // 避免直接 dynamic 调用，先反射或检查方法是否存在会更安全，但在 Dart 中 dynamic 是常用妥协
+      // 这里保持原有逻辑，但增加 catch 范围
       final dynamic dyn = value;
-      // prefer toJson if exists
-      final dynamic json = dyn.toJson();
-      // 如果 toJson 返回 Map/Iterable/string etc，则递归判断
-      return isEmpty(json, deep: deep);
-    } catch (_) {
-      // ignore
-    }
-
-    try {
-      final dynamic dyn = value;
-      final dynamic map = dyn.toMap();
-      return isEmpty(map, deep: deep);
+      try {
+        final dynamic json = dyn.toJson();
+        return isEmpty(json, deep: deep);
+      } catch (_) {
+        try {
+          final dynamic map = dyn.toMap();
+          return isEmpty(map, deep: deep);
+        } catch (_) {
+          // ignore
+        }
+      }
     } catch (_) {
       // ignore
     }
 
     // fallback: 若对象的 toString() 明显为空或 'null'，视作空；否则认为非空
     final s = value.toString();
-    if (s == null) return true;
-    final trimmed = s.trim();
-    if (trimmed.isEmpty) return true;
-    // Some generated models print "Instance of 'X'" which is not empty
-    // If you want to treat 'Instance of' as empty, uncomment next line:
-    // if (trimmed.startsWith('Instance of')) return true;
+    if (s == 'null' || s.trim().isEmpty) return true;
+    
     return false;
   }
 

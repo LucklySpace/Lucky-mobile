@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../constants/app_colors.dart';
+
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
   final List<Widget>? actions;
@@ -29,9 +31,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: actions,
       leading: leading,
       centerTitle: centerTitle,
-      backgroundColor: backgroundColor ?? Theme.of(context).primaryColor,
-      foregroundColor:
-          foregroundColor ?? Theme.of(context).colorScheme.onPrimary,
+      backgroundColor: backgroundColor ?? AppColors.primary,
+      foregroundColor: foregroundColor ?? AppColors.textWhite,
       elevation: elevation,
       bottom: bottom,
     );

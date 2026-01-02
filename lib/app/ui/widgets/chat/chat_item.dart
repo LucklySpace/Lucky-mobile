@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_im/constants/app_sizes.dart';
 
 import '../../../../constants/app_colors.dart';
 import '../../../../utils/date.dart';
@@ -9,23 +10,23 @@ import 'chat_avatar.dart';
 /// 支持自定义样式，适配主题化显示
 class ChatItem extends StatelessWidget {
   // 常量定义
-  static const _avatarSize = 50.0; // 头像尺寸
-  static const _avatarSpacing = 8.0; // 头像与内容的间距
-  static const _verticalPadding = 4.0; // 垂直内边距
-  static const _horizontalPadding = 4.0; // 水平内边距
-  static const _contentSpacing = 4.0; // 内容行间距
+  static const _avatarSize = AppSizes.spacing50; // 头像尺寸
+  static const _avatarSpacing = AppSizes.spacing8; // 头像与内容的间距
+  static const _verticalPadding = AppSizes.spacing4; // 垂直内边距
+  static const _horizontalPadding = AppSizes.spacing4; // 水平内边距
+  static const _contentSpacing = AppSizes.spacing4; // 内容行间距
   static const _nameStyle = TextStyle(
-    color: kColor33,
-    fontSize: 16.0,
+    color: AppColors.textPrimary,
+    fontSize: AppSizes.font16,
     fontWeight: FontWeight.w500,
   ); // 聊天名称样式
   static const _timeStyle = TextStyle(
-    color: kColor99,
-    fontSize: 12.0,
+    color: AppColors.textHint,
+    fontSize: AppSizes.font12,
   ); // 时间样式
   static const _messageStyle = TextStyle(
-    color: kColor99,
-    fontSize: 14.0,
+    color: AppColors.textHint,
+    fontSize: AppSizes.font14,
   ); // 消息内容样式
   static const _timeFormat = 'yy/MM/dd'; // 时间格式
 

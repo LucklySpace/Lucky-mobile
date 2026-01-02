@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
+
 class VideoCallSnackbar {
   static void show({
     required String avatar,
@@ -19,10 +22,10 @@ class VideoCallSnackbar {
         onReject: onReject,
       ),
       duration: const Duration(seconds: 30),
-      backgroundColor: const Color.fromARGB(255, 15, 15, 15).withOpacity(0.6),
-      borderRadius: 8,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      margin: const EdgeInsets.all(8),
+      backgroundColor: AppColors.mask,
+      borderRadius: AppSizes.radius8,
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing12, vertical: AppSizes.spacing16),
+      margin: const EdgeInsets.all(AppSizes.spacing8),
       snackPosition: SnackPosition.TOP,
     );
   }
@@ -37,10 +40,10 @@ class VideoCallSnackbar {
       children: [
         // 头像
         CircleAvatar(
-          radius: 25,
+          radius: AppSizes.radius24,
           backgroundImage: NetworkImage(avatar),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: AppSizes.spacing16),
         // 用户名和通话请求文本
         Expanded(
           child: Column(
@@ -50,17 +53,17 @@ class VideoCallSnackbar {
               Text(
                 username,
                 style: const TextStyle(
-                  fontSize: 18,
-                  color: Colors.white,
+                  fontSize: AppSizes.font18,
+                  color: AppColors.textWhite,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSizes.spacing6),
               const Text(
                 '视频通话请求',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.grey,
+                style: const TextStyle(
+                  fontSize: AppSizes.font14,
+                  color: AppColors.textHint,
                 ),
               ),
             ],
@@ -73,16 +76,16 @@ class VideoCallSnackbar {
             onAccept();
           },
           style: IconButton.styleFrom(
-            backgroundColor: Colors.green,
-            padding: const EdgeInsets.all(5),
+            backgroundColor: AppColors.success,
+            padding: const EdgeInsets.all(AppSizes.spacing4),
           ),
           icon: const Icon(
             Icons.videocam_rounded,
-            color: Colors.white,
-            size: 28,
+            color: AppColors.textWhite,
+            size: AppSizes.iconLarge,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSizes.spacing12),
         // 拒绝按钮
         IconButton(
           onPressed: () {
@@ -90,13 +93,13 @@ class VideoCallSnackbar {
             onReject();
           },
           style: IconButton.styleFrom(
-            backgroundColor: Colors.red,
-            padding: const EdgeInsets.all(5),
+            backgroundColor: AppColors.error,
+            padding: const EdgeInsets.all(AppSizes.spacing4),
           ),
           icon: const Icon(
             Icons.call_end_rounded,
-            color: Colors.white,
-            size: 28,
+            color: AppColors.textWhite,
+            size: AppSizes.iconLarge,
           ),
         ),
       ],
