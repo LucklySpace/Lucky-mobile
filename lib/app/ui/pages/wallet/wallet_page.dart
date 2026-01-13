@@ -57,7 +57,8 @@ class WalletPage extends GetView<WalletController> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: AppSizes.spacing16, vertical: AppSizes.spacing8),
+                          horizontal: AppSizes.spacing16,
+                          vertical: AppSizes.spacing8),
                       child: Text(
                         '最近交易',
                         style:
@@ -94,8 +95,7 @@ class WalletPage extends GetView<WalletController> {
                 controller.isCreating.value ? null : controller.createWallet,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.spacing32,
-                  vertical: AppSizes.spacing12),
+                  horizontal: AppSizes.spacing32, vertical: AppSizes.spacing12),
             ),
             child: controller.isCreating.value
                 ? const SizedBox(
@@ -146,7 +146,8 @@ class WalletPage extends GetView<WalletController> {
               Text(
                 '总资产',
                 style: TextStyle(
-                    color: AppColors.textWhite.withOpacity(0.9), fontSize: AppSizes.font14),
+                    color: AppColors.textWhite.withOpacity(0.9),
+                    fontSize: AppSizes.font14),
               ),
               IconButton(
                 icon: const Icon(
@@ -171,7 +172,8 @@ class WalletPage extends GetView<WalletController> {
           ),
           const SizedBox(height: AppSizes.spacing12),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing12, vertical: AppSizes.spacing6),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing12, vertical: AppSizes.spacing6),
             decoration: BoxDecoration(
               color: AppColors.black.withOpacity(0.1),
               borderRadius: BorderRadius.circular(AppSizes.radius20),
@@ -181,7 +183,8 @@ class WalletPage extends GetView<WalletController> {
               children: [
                 Text(
                   address,
-                  style: const TextStyle(color: AppColors.textWhite, fontSize: AppSizes.font12),
+                  style: const TextStyle(
+                      color: AppColors.textWhite, fontSize: AppSizes.font12),
                 ),
                 const SizedBox(width: AppSizes.spacing8),
                 GestureDetector(
@@ -192,7 +195,8 @@ class WalletPage extends GetView<WalletController> {
                       duration: Duration(seconds: 1),
                     ));
                   },
-                  child: const Icon(Icons.copy, color: AppColors.textWhite, size: AppSizes.font14),
+                  child: const Icon(Icons.copy,
+                      color: AppColors.textWhite, size: AppSizes.font14),
                 ),
               ],
             ),
@@ -241,7 +245,8 @@ class WalletPage extends GetView<WalletController> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSizes.radius16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing20, vertical: AppSizes.spacing12),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.spacing20, vertical: AppSizes.spacing12),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppSizes.radius16),
@@ -273,7 +278,8 @@ class WalletPage extends GetView<WalletController> {
           child: Padding(
             padding: EdgeInsets.only(top: AppSizes.spacing40),
             child: Center(
-                child: Text('暂无交易记录', style: TextStyle(color: AppColors.textHint))),
+                child: Text('暂无交易记录',
+                    style: TextStyle(color: AppColors.textHint))),
           ),
         );
       }
@@ -404,33 +410,36 @@ class _ReceiveDialogState extends State<ReceiveDialog> {
   @override
   Widget build(BuildContext context) {
     // 构建二维码数据
-    String qrData = '${AppConstants.WALLET_ADDRESS_PREFIX}${widget.address}';
+    String qrData = '${AppConstants.walletAddressPrefix}${widget.address}';
 
     final encodedQrData = Uri.encodeComponent(qrData);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radius20)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radius20)),
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.spacing24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text('收款码',
-                style: TextStyle(fontSize: AppSizes.font18, fontWeight: FontWeight.bold)),
+                style: TextStyle(
+                    fontSize: AppSizes.font18, fontWeight: FontWeight.bold)),
             const SizedBox(height: AppSizes.spacing12),
             QrImageView(
               data: encodedQrData,
               version: QrVersions.auto,
               size: AppSizes.spacing200,
-              embeddedImageStyle:
-                  const QrEmbeddedImageStyle(size: Size(AppSizes.spacing36, AppSizes.spacing36)),
+              embeddedImageStyle: const QrEmbeddedImageStyle(
+                  size: Size(AppSizes.spacing36, AppSizes.spacing36)),
               errorCorrectionLevel: QrErrorCorrectLevel.M,
               errorStateBuilder: (context, error) {
                 debugPrint('二维码生成失败: $error');
                 return const Center(
                   child: Text(
                     '二维码生成失败',
-                    style: TextStyle(color: AppColors.error, fontSize: AppSizes.font14),
+                    style: TextStyle(
+                        color: AppColors.error, fontSize: AppSizes.font14),
                   ),
                 );
               },

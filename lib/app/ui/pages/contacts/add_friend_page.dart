@@ -27,7 +27,8 @@ class AddFriendPage extends StatelessWidget {
         centerTitle: true,
         backgroundColor: AppColors.primary,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textWhite),
+          icon:
+              const Icon(Icons.arrow_back_ios_new, color: AppColors.textWhite),
           onPressed: () => Get.back(),
         ),
       ),
@@ -49,7 +50,8 @@ class AddFriendPage extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: '输入用户ID或手机号搜索',
                   hintStyle: const TextStyle(color: AppColors.textHint),
-                  prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                  prefixIcon:
+                      const Icon(Icons.search, color: AppColors.primary),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.clear, color: AppColors.textHint),
                     onPressed: () => _searchController.clear(),
@@ -111,7 +113,8 @@ class AddFriendPage extends StatelessWidget {
           const SizedBox(height: AppSizes.spacing16),
           const Text(
             '正在搜索...',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.font14),
+            style: TextStyle(
+                color: AppColors.textSecondary, fontSize: AppSizes.font14),
           ),
         ],
       ),
@@ -163,8 +166,7 @@ class AddFriendPage extends StatelessWidget {
                         width: AppSizes.spacing40,
                         height: AppSizes.spacing40,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => const Icon(
-                            Icons.person,
+                        placeholder: (context, url) => const Icon(Icons.person,
                             color: AppColors.textDisabled),
                         errorWidget: (context, url, error) => const Icon(
                             Icons.person,
@@ -175,7 +177,8 @@ class AddFriendPage extends StatelessWidget {
             ),
             title: Text(user.name ?? "",
                 style: const TextStyle(fontWeight: FontWeight.w500)),
-            trailing: const Icon(Icons.chevron_right, color: AppColors.textDisabled),
+            trailing:
+                const Icon(Icons.chevron_right, color: AppColors.textDisabled),
             onTap: () {
               // TODO: 可添加查看详情逻辑
               Get.toNamed("${Routes.HOME}${Routes.FRIEND_PROFILE}",

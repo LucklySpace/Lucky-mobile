@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../../constants/app_message.dart';
 import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_message.dart';
 import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../../utils/date.dart';
@@ -29,7 +29,8 @@ class MessagePage extends GetView<ChatController> {
     fontWeight: FontWeight.w600,
   );
   static const _loadingPadding = EdgeInsets.all(AppSizes.spacing10);
-  static const _noMoreMessagesPadding = EdgeInsets.symmetric(vertical: AppSizes.spacing16);
+  static const _noMoreMessagesPadding =
+      EdgeInsets.symmetric(vertical: AppSizes.spacing16);
   static const _noMoreMessagesStyle = TextStyle(
     fontSize: AppSizes.font12,
     color: AppColors.textHint,
@@ -40,7 +41,8 @@ class MessagePage extends GetView<ChatController> {
   static const _defaultAvatar = ''; // 默认头像 URL
   static const _timeDiffThreshold = Duration(minutes: 5); // 时间差阈值（5分钟）
   static const _timeFormat = 'yy/MM/dd'; // 时间格式
-  static const _timePadding = EdgeInsets.symmetric(vertical: AppSizes.spacing8); // 时间标签边距
+  static const _timePadding =
+      EdgeInsets.symmetric(vertical: AppSizes.spacing8); // 时间标签边距
 
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -169,18 +171,35 @@ class MessagePage extends GetView<ChatController> {
     final message = controller.messageList[index];
     final isMe = message.fromId == controller.userId.value;
     final chat = controller.currentChat.value;
-    final name =
-        isMe ? userInfo['name'] ?? _defaultName : chat?.name ?? _defaultName;
-    final avatar = isMe
-        ? userInfo['avatar'] ?? _defaultAvatar
-        : chat?.avatar ?? _defaultAvatar;
+
+    var name = "";
+    var avatar = "";
+
+    if (chat?.chatType == MessageType.singleMessage.code) {
+      name =
+          isMe ? userInfo['name'] ?? _defaultName : chat?.name ?? _defaultName;
+      avatar = isMe
+          ? userInfo['avatar'] ?? _defaultAvatar
+          : chat?.avatar ?? _defaultAvatar;
+    }
+
+    if (chat?.chatType == MessageType.groupMessage.code) {
+      final groupMembers = controller.groupMembers[chat?.toId ?? ''];
+      final member = groupMembers?[message.fromId ?? ''];
+      name = isMe
+          ? userInfo['name'] ?? _defaultName
+          : member?.name ?? _defaultName;
+      avatar = isMe
+          ? userInfo['avatar'] ?? _defaultAvatar
+          : member?.avatar ?? _defaultAvatar;
+    }
 
     // 计算是否显示时间（与上一条消息时间差小于 5 分钟不显示）
     final showTime = _shouldShowTime(index, message);
 
     // 构建消息气泡
     final contentType =
-        IMessageContentType.fromCode(message.messageContentType ?? 1);
+        MessageContentType.fromCode(message.messageContentType ?? 1);
     final bubble = _messageBubbleMap[contentType]?.call(
           message: message,
           isMe: isMe,
@@ -227,11 +246,11 @@ class MessagePage extends GetView<ChatController> {
 
   /// 消息气泡映射表
   static const _messageBubbleMap = {
-    IMessageContentType.file: _buildFileBubble,
-    IMessageContentType.image: _buildImageBubble,
-    IMessageContentType.video: _buildVideoBubble,
-    IMessageContentType.text: _buildTextBubble,
-    IMessageContentType.tip: _buildSystemBubble,
+    MessageContentType.file: _buildFileBubble,
+    MessageContentType.image: _buildImageBubble,
+    MessageContentType.video: _buildVideoBubble,
+    MessageContentType.text: _buildTextBubble,
+    MessageContentType.tip: _buildSystemBubble,
   };
 
   /// 构建图片气泡

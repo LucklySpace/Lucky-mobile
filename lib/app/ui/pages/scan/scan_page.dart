@@ -103,9 +103,9 @@ class _ScanPageState extends State<ScanPage>
 
     // 定义二维码处理逻辑
     var handlers = {
-      AppConstants.LOGIN_QRCODE_PREFIX: _handleLoginQRCode,
-      AppConstants.FRIEND_PROFILE_PREFIX: _handleFriendProfileQRCode,
-      AppConstants.WALLET_ADDRESS_PREFIX: _handleWalletAddressQRCode,
+      AppConstants.loginQrcodePrefix: _handleLoginQRCode,
+      AppConstants.friendProfilePrefix: _handleFriendProfileQRCode,
+      AppConstants.walletAddressPrefix: _handleWalletAddressQRCode,
     };
 
     // 检查是否为 URL 或特定前缀
@@ -206,8 +206,8 @@ class _ScanPageState extends State<ScanPage>
             top: MediaQuery.of(context).padding.top + AppSizes.spacing10,
             left: AppSizes.spacing16,
             child: IconButton(
-              icon:
-                  const Icon(Icons.close, color: AppColors.textWhite, size: _iconSize),
+              icon: const Icon(Icons.close,
+                  color: AppColors.textWhite, size: _iconSize),
               onPressed: Get.back,
             ),
           ),
@@ -255,9 +255,9 @@ class _ScanPageState extends State<ScanPage>
             return Positioned(
               top: _animationController.value * _scanAreaSize,
               child: Container(
-              width: _scanAreaSize - AppSizes.spacing20,
-              height: AppSizes.spacing2,
-              decoration: BoxDecoration(
+                width: _scanAreaSize - AppSizes.spacing20,
+                height: AppSizes.spacing2,
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
@@ -318,16 +318,20 @@ class _ScanPageState extends State<ScanPage>
       decoration: BoxDecoration(
         border: Border(
           left: left
-              ? const BorderSide(color: AppColors.success, width: _cornerBorderWidth)
+              ? const BorderSide(
+                  color: AppColors.success, width: _cornerBorderWidth)
               : BorderSide.none,
           right: right
-              ? const BorderSide(color: AppColors.success, width: _cornerBorderWidth)
+              ? const BorderSide(
+                  color: AppColors.success, width: _cornerBorderWidth)
               : BorderSide.none,
           top: top
-              ? const BorderSide(color: AppColors.success, width: _cornerBorderWidth)
+              ? const BorderSide(
+                  color: AppColors.success, width: _cornerBorderWidth)
               : BorderSide.none,
           bottom: bottom
-              ? const BorderSide(color: AppColors.success, width: _cornerBorderWidth)
+              ? const BorderSide(
+                  color: AppColors.success, width: _cornerBorderWidth)
               : BorderSide.none,
         ),
       ),

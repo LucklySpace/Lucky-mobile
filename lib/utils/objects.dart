@@ -76,7 +76,7 @@ class Objects {
     // fallback: 若对象的 toString() 明显为空或 'null'，视作空；否则认为非空
     final s = value.toString();
     if (s == 'null' || s.trim().isEmpty) return true;
-    
+
     return false;
   }
 

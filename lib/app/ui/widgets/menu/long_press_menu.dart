@@ -78,9 +78,14 @@ class _LongPressMenuState extends State<LongPressMenu>
     }
 
     // 垂直超出则向上弹
-    if (top + menuHeight > screenSize.height - padding.bottom - AppSizes.spacing8) {
-      top = globalPosition.dy - menuHeight - AppSizes.spacing10 + widget.offset.dy;
-      if (top < padding.top + AppSizes.spacing8) top = padding.top + AppSizes.spacing8;
+    if (top + menuHeight >
+        screenSize.height - padding.bottom - AppSizes.spacing8) {
+      top = globalPosition.dy -
+          menuHeight -
+          AppSizes.spacing10 +
+          widget.offset.dy;
+      if (top < padding.top + AppSizes.spacing8)
+        top = padding.top + AppSizes.spacing8;
     }
 
     _overlayEntry = OverlayEntry(builder: (ctx) {

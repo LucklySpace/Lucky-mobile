@@ -4,16 +4,17 @@ import 'dart:io';
 
 import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
+import 'package:flutter_im/exceptions/app_exception.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
 import '../../constants/app_message.dart';
 import '../../utils/objects.dart';
+import '../../utils/performance.dart';
 import '../../utils/rsa.dart';
 import '../api/api_service.dart';
 import '../core/handlers/error_handler.dart';
-import 'package:flutter_im/exceptions/app_exception.dart';
 import '../models/User.dart';
 import '../models/message_receive.dart';
 import '../services/websocket_service.dart';
@@ -108,34 +109,74 @@ class UserController extends GetxController with WidgetsBindingObserver {
 
   // ====================== 认证（登录/登出） ======================
 
-  /// 用户登录（加密密码并调用 API），成功后会触发 startConnect()
+  /// 用户登录
+  ///
+  /// 流程：
+  /// 1. 清理旧状态
+  /// 2. 获取公钥
+  /// 3. 加密密码
+  /// 4. 调用登录API
+  /// 5. 保存Token和用户ID
+  /// 6. 启动连接
+  ///
+  /// [username] 用户名或手机号
+  /// [password] 密码或验证码
+  /// [authType] 认证类型：'form'(密码) 或 'sms'(验证码)
   Future<bool> login(String username, String password, String authType) async {
     try {
-      await logout(); // 先清理旧状态
+      Get.log('🔐 开始登录流程...');
+
+      // 清理旧状态
+      await logout();
+
+      // 获取公钥（用于密码加密）
       await _ensurePublicKey();
 
-      final encryptedPassword = await RSAService.encrypt(password, publicKey);
-      Get.log('🔑 加密后的密码（已隐藏）');
+      if (publicKey.isEmpty) {
+        throw AuthException('获取加密公钥失败，请重试');
+      }
 
+      // 加密密码
+      final encryptedPassword = await RSAService.encrypt(password, publicKey);
+      Get.log('🔑 密码加密完成');
+
+      // 构建登录请求数据
       final loginData = {
         'principal': username,
         'credentials': encryptedPassword,
         'authType': authType,
       };
 
+      // 调用登录API
       final response = await _apiService.login(loginData);
+
+      // 处理登录响应
       return _handleApiResponse(response, onSuccess: (data) {
-        if (Objects.isNotBlank(Objects.safeGet<String>(data, 'accessToken')) &&
-            Objects.isNotBlank(Objects.safeGet<String>(data, 'userId'))) {
-          token.value = Objects.safeGet<String>(data, 'accessToken') ?? '';
-          userId.value = Objects.safeGet<String>(data, 'userId') ?? '';
-          startConnect();
-          return true;
+        final accessToken = Objects.safeGet<String>(data, 'accessToken');
+        final userIdStr = Objects.safeGet<String>(data, 'userId');
+
+        // 验证返回数据
+        if (Objects.isBlank(accessToken) || Objects.isBlank(userIdStr)) {
+          throw AuthException('登录响应数据不完整');
         }
-        return false;
+
+        // 保存认证信息
+        token.value = accessToken!;
+        userId.value = userIdStr!;
+
+        Get.log('✅ 登录成功，用户ID: $userIdStr');
+
+        // 启动连接（异步执行，不阻塞登录响应）
+        startConnect();
+
+        return true;
       }, errorMessage: '登录失败');
+    } on AuthException {
+      rethrow;
     } catch (e, st) {
-      _showError('登录异常', silent: false);
+      Get.log('❌ 登录异常: $e');
+      Get.log('Stack trace: $st');
+      _showError(AuthException('登录失败，请稍后重试', details: e));
       return false;
     }
   }
@@ -154,20 +195,41 @@ class UserController extends GetxController with WidgetsBindingObserver {
     }
   }
 
-  /// 登录成功后启动的一系列初始化流程（按顺序更新用户数据与连接）
+  /// 登录成功后启动的一系列初始化流程
+  ///
+  /// 流程：
+  /// 1. 获取用户信息
+  /// 2. 连接WebSocket
+  /// 3. 并行加载联系人、好友请求、会话列表
+  /// 4. 同步消息
   Future<void> startConnect() async {
-    // 获取用户信息
-    await getUserInfo();
-    // 连接 WebSocket
-    connectWebSocket();
-    // 并行获取各类数据以加快启动速度
-    await Future.wait([
-      _contactController.fetchContacts(),
-      _contactController.fetchFriendRequests(),
-      _chatController.fetchChats(),
-    ]);
-    // 获取消息（会读取本地或远端）
-    _chatController.fetchMessages();
+    try {
+      Get.log('🚀 开始初始化连接...');
+
+      // 1. 获取用户信息（必须成功）
+      await getUserInfo();
+
+      // 2. 连接WebSocket
+      connectWebSocket();
+
+      // 3. 并行加载各类数据（提升加载速度）
+      await Performance.measure('并行加载数据', () async {
+        await Future.wait([
+          _contactController.fetchContacts(),
+          _contactController.fetchFriendRequests(),
+          _chatController.fetchChats(),
+        ], eagerError: false); // 即使某个失败也继续执行其他
+      });
+
+      // 4. 同步消息（异步执行，不阻塞）
+      _chatController.fetchMessages();
+
+      Get.log('✅ 连接初始化完成');
+    } catch (e, st) {
+      Get.log('❌ 连接初始化失败: $e');
+      Get.log('Stack trace: $st');
+      _showError('初始化失败，部分功能可能不可用', silent: true);
+    }
   }
 
   // ====================== WebSocket 管理 ======================
@@ -253,20 +315,20 @@ class UserController extends GetxController with WidgetsBindingObserver {
       }
 
       final code = message['code'] ?? 1;
-      final contentType = IMessageType.fromCode(code);
+      final contentType = MessageType.fromCode(code);
 
       switch (contentType) {
-        case IMessageType.login:
+        case MessageType.login:
           Get.log('WebSocket 注册响应: $message');
           break;
-        case IMessageType.heartBeat:
+        case MessageType.heartBeat:
           Get.log('WebSocket 心跳响应: $message');
           break;
-        case IMessageType.singleMessage:
-        case IMessageType.groupMessage:
+        case MessageType.singleMessage:
+        case MessageType.groupMessage:
           _processChatMessage(message['data']);
           break;
-        case IMessageType.videoMessage:
+        case MessageType.videoMessage:
           _processVideoMessage(message['data']);
           break;
         default:
@@ -293,7 +355,7 @@ class UserController extends GetxController with WidgetsBindingObserver {
 
       _chatController.handleCreateOrUpdateChat(parsedMessage, chatId, false);
       Get.log(
-          'WebSocket ${parsedMessage.messageType == IMessageType.singleMessage.code ? '单聊' : '群聊'}消息接收: ${parsedMessage.messageId ?? 'unknown id'}');
+          'WebSocket ${parsedMessage.messageType == MessageType.singleMessage.code ? '单聊' : '群聊'}消息接收: ${parsedMessage.messageId ?? 'unknown id'}');
     } catch (e, st) {
       _showError('_processChatMessage 异常: $e\n$st');
     }
@@ -317,14 +379,14 @@ class UserController extends GetxController with WidgetsBindingObserver {
   /// 从 IMessage 推断 chatId（single => 对端 id，group => groupId）
   String? _deriveChatIdFromMessage(IMessage parsedMessage) {
     try {
-      if (parsedMessage.messageType == IMessageType.singleMessage.code) {
+      if (parsedMessage.messageType == MessageType.singleMessage.code) {
         // single message: chatId 是另一方的 id（如果当前为发送方取 toId，否则取 fromId）
         final single = IMessage.toSingleMessage(parsedMessage, userId.value);
         if (single == null) return null;
         return single.fromId == userId.value
             ? parsedMessage.toId
             : parsedMessage.fromId;
-      } else if (parsedMessage.messageType == IMessageType.groupMessage.code) {
+      } else if (parsedMessage.messageType == MessageType.groupMessage.code) {
         final group = IMessage.toGroupMessage(parsedMessage, userId.value);
         return group?.groupId;
       }
@@ -380,29 +442,44 @@ class UserController extends GetxController with WidgetsBindingObserver {
     }
   }
 
-  /// 上传图片（使用 dio 的 FormData）
+  /// 上传图片
+  ///
+  /// [img] 要上传的图片文件
+  /// 返回上传后的图片路径
   Future<String?> uploadImage(File? img) async {
     try {
       if (img == null) {
-        Get.log('图片为空');
+        Get.log('⚠️ 图片为空');
         return null;
       }
 
-      Get.log('图片大小: ${img.lengthSync()}');
-      Get.log('图片格式: ${img.path.split('.').last}');
-      Get.log('图片路径: ${img.path}');
-      Get.log('图片名称: ${img.path.split('/').last}');
+      final fileSize = img.lengthSync();
+      final fileName = img.path.split('/').last;
+      final fileExtension = img.path.split('.').last;
+
+      Get.log('📸 准备上传图片:');
+      Get.log('  - 大小: ${(fileSize / 1024).toStringAsFixed(2)} KB');
+      Get.log('  - 格式: $fileExtension');
+      Get.log('  - 文件名: $fileName');
 
       // 使用 dio 的 FormData
       final formData = dio.FormData.fromMap({
-        "file": await dio.MultipartFile.fromFile(img.path,
-            filename: img.path.split('/').last),
+        "file": await dio.MultipartFile.fromFile(
+          img.path,
+          filename: fileName,
+        ),
       });
 
       final response = await _apiService.uploadImage(formData);
-      return response?['path'] as String?;
-    } catch (e, st) {
-      _showError('上传图片失败: $e\n$st');
+      final imagePath = response?['path'] as String?;
+
+      if (imagePath != null) {
+        Get.log('✅ 图片上传成功: $imagePath');
+      }
+
+      return imagePath;
+    } catch (e) {
+      _showError('上传图片失败: $e');
       rethrow;
     }
   }

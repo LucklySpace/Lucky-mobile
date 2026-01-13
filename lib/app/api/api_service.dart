@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
+import 'package:flutter_im/exceptions/app_exception.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
-import 'package:flutter_im/exceptions/app_exception.dart';
 import '../services/http_service.dart';
 
 /// **🌐 统一 API 服务**
@@ -162,7 +162,7 @@ class ApiService extends HttpService {
   }
 
   /// 获取群成员
-  Future<Map<String, dynamic>?> getGroupMember(Map<String, dynamic> data) {
+  Future<Map<String, dynamic>?> getGroupMembers(Map<String, dynamic> data) {
     return post('/service/api/v1/group/member', data: data);
   }
 

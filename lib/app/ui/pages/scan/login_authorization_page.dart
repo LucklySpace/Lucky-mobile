@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../constants/app_colors.dart';
@@ -107,22 +106,22 @@ class AuthorizationPage extends StatelessWidget {
               width: AppSizes.spacing36,
               height: AppSizes.spacing36,
               child: avatarUrl.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: avatarUrl,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              const Center(child: CircularProgressIndicator()),
-                          errorWidget: (context, url, error) {
-                            debugPrint('加载头像失败: $error');
-                            return Container(
-                              color: _avatarPlaceholderColor,
-                              child: const Icon(Icons.person,
-                                  size: AppSizes.spacing36,
-                                  color: AppColors.textWhite),
-                            );
-                          },
-                        )
-                      : Container(
+                  ? CachedNetworkImage(
+                      imageUrl: avatarUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) =>
+                          const Center(child: CircularProgressIndicator()),
+                      errorWidget: (context, url, error) {
+                        debugPrint('加载头像失败: $error');
+                        return Container(
+                          color: _avatarPlaceholderColor,
+                          child: const Icon(Icons.person,
+                              size: AppSizes.spacing36,
+                              color: AppColors.textWhite),
+                        );
+                      },
+                    )
+                  : Container(
                       color: _avatarPlaceholderColor,
                       child: const Icon(Icons.person,
                           size: AppSizes.spacing36, color: AppColors.textWhite),

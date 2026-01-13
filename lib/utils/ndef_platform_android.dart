@@ -25,9 +25,9 @@ final class NdefPlatformAndroid implements Ndef {
 
   @override
   Map<String, dynamic> get additionalData => {
-    'canMakeReadOnly': _tech.canMakeReadOnly,
-    'type': _tech.type,
-  };
+        'canMakeReadOnly': _tech.canMakeReadOnly,
+        'type': _tech.type,
+      };
 
   @override
   Future<NdefMessage?> read() {

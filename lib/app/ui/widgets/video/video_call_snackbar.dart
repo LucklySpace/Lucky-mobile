@@ -24,7 +24,8 @@ class VideoCallSnackbar {
       duration: const Duration(seconds: 30),
       backgroundColor: AppColors.mask,
       borderRadius: AppSizes.radius8,
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing12, vertical: AppSizes.spacing16),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing12, vertical: AppSizes.spacing16),
       margin: const EdgeInsets.all(AppSizes.spacing8),
       snackPosition: SnackPosition.TOP,
     );

@@ -1,24 +1,40 @@
 import 'dart:convert';
 
+import 'package:flutter_im/exceptions/app_exception.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 
+import '../../constants/app_constant.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/objects.dart';
 import '../api/api_service.dart';
 import '../core/handlers/error_handler.dart';
-import 'package:flutter_im/exceptions/app_exception.dart';
 import '../models/wallet_model.dart';
 import '../services/nfc_service.dart';
 import 'user_controller.dart';
 
+/// 钱包控制器
+///
+/// 功能：
+/// - 钱包信息管理
+/// - 转账和支付
+/// - 交易记录查询
+/// - 手续费计算
+/// - NFC支付支持
+/// - 本地缓存管理
 class WalletController extends GetxController {
+  // ==================== 常量定义 ====================
+
+  static const String _walletKeyPrefix = 'wallet_info_';
+  static const int _decimalPlaces = 8; // 数字货币小数位数
+
+  // ==================== 依赖注入 ====================
+
   final ApiService _apiService = Get.find<ApiService>();
   final UserController _userController = Get.find<UserController>();
-
-  // 依赖注入
   final _secureStorage = const FlutterSecureStorage();
-  static const String _walletKeyPrefix = 'wallet_info_';
+
+  // ==================== 响应式状态 ====================
 
   final Rx<WalletVo?> wallet = Rx<WalletVo?>(null);
   final RxList<TransactionVo> transactions = <TransactionVo>[].obs;
@@ -27,14 +43,18 @@ class WalletController extends GetxController {
   final Rx<FeeVo?> feeInfo = Rx<FeeVo?>(null);
   final RxString estimatedFee = '0.00000000'.obs;
 
-  static const int _successCode = 200;
+  // ==================== 生命周期 ====================
 
   @override
   void onInit() {
     super.onInit();
+
+    // 如果用户已登录，加载钱包数据
     if (_userController.userId.isNotEmpty) {
       loadWalletData();
     }
+
+    // 获取手续费信息
     fetchFeeInfo();
   }
 
@@ -90,24 +110,56 @@ class WalletController extends GetxController {
     }
   }
 
+  // ==================== 手续费管理 ====================
+
   /// 获取手续费信息
   Future<void> fetchFeeInfo() async {
-    final res = await _apiService.fee();
-    _handleApiResponse(res, onSuccess: (data) {
-      feeInfo.value = FeeVo.fromJson(data);
-    }, errorMessage: '获取手续费信息失败');
+    try {
+      final res = await _apiService.fee();
+      _handleApiResponse(res, onSuccess: (data) {
+        feeInfo.value = FeeVo.fromJson(data);
+        Get.log('✅ 手续费信息已更新');
+      }, errorMessage: '获取手续费信息失败');
+    } catch (e) {
+      ErrorHandler.handle(
+        AppException('获取手续费信息失败', details: e),
+        silent: true,
+      );
+    }
   }
-  String _formatAmount(double value) => value.toStringAsFixed(8);
+
+  /// 计算手续费
+  ///
+  /// [amount] 转账金额
+  /// 返回格式化的手续费字符串
   String calculateFee(String amount) {
     final info = feeInfo.value;
-    final amt = double.tryParse(amount) ?? 0.0;
     if (info == null) return _formatAmount(0);
+
+    final amt = double.tryParse(amount) ?? 0.0;
     final base = double.tryParse(info.fee) ?? 0.0;
-    final val = info.feeMode == FeeMode.fixed ? base : amt * base;
-    return _formatAmount(val);
+
+    // 根据手续费模式计算
+    final fee = info.feeMode == FeeMode.fixed ? base : amt * base;
+
+    return _formatAmount(fee);
   }
+
+  /// 更新预估手续费
+  ///
+  /// [amount] 转账金额
   void computeEstimatedFee(String amount) {
+    if (amount.isEmpty) {
+      estimatedFee.value = _formatAmount(0);
+      return;
+    }
+
     estimatedFee.value = calculateFee(amount);
+  }
+
+  /// 格式化金额（保留8位小数）
+  String _formatAmount(double value) {
+    return value.toStringAsFixed(_decimalPlaces);
   }
 
   /// 创建钱包
@@ -124,7 +176,7 @@ class WalletController extends GetxController {
         Get.snackbar('成功', '钱包创建成功', snackPosition: SnackPosition.BOTTOM);
       }, errorMessage: '创建钱包失败');
     } catch (e) {
-      _showError('创建钱包失败: $e');
+      ErrorHandler.handle(AppException('创建钱包失败', details: e));
     } finally {
       isCreating.value = false;
     }
@@ -203,7 +255,7 @@ class WalletController extends GetxController {
         'amount': amount,
         'errorMessage': e is BusinessException ? e.message : '转账发生错误',
       });
-      _showError('转账失败: $e');
+      ErrorHandler.handle(AppException('转账失败', details: e));
       return false;
     }
   }
@@ -254,7 +306,7 @@ class WalletController extends GetxController {
         'amount': amount,
         'errorMessage': e is BusinessException ? e.message : '支付发生错误',
       });
-      _showError('支付失败: $e');
+      ErrorHandler.handle(AppException('支付失败', details: e));
       return false;
     }
   }
@@ -293,7 +345,7 @@ class WalletController extends GetxController {
       }, errorMessage: '确认失败');
       return true;
     } catch (e) {
-      _showError('确认收款失败: $e');
+      ErrorHandler.handle(AppException('确认收款失败', details: e));
       return false;
     }
   }
@@ -309,7 +361,7 @@ class WalletController extends GetxController {
       }, errorMessage: '退回失败');
       return true;
     } catch (e) {
-      _showError('退回失败: $e');
+      ErrorHandler.handle(AppException('退回失败', details: e));
       return false;
     }
   }
@@ -342,6 +394,8 @@ class WalletController extends GetxController {
     );
   }
 
+  // ==================== 辅助方法 ====================
+
   /// 统一处理 API 响应
   void _handleApiResponse(
     Map<String, dynamic>? response, {
@@ -349,15 +403,10 @@ class WalletController extends GetxController {
     required String errorMessage,
   }) {
     final code = Objects.safeGet<int>(response, 'code');
-    if (code == _successCode) {
+    if (code == AppConstants.businessCodeSuccess) {
       return onSuccess(response?['data']);
     }
-    final msg = Objects.safeGet<String>(response, 'message', errorMessage);
-    throw BusinessException(msg.toString());
-  }
-
-  /// 显示错误提示
-  void _showError(dynamic error) {
-    ErrorHandler.handle(error);
+    final msg = Objects.safeGet<String>(response, 'message') ?? errorMessage;
+    throw BusinessException(msg);
   }
 }

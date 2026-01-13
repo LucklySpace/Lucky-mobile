@@ -141,7 +141,7 @@ class IMessage {
                   : (json['messageType'] != null
                       ? (json['messageType'] as num).toInt()
                       : 0)) ==
-              IMessageType.singleMessage.code
+              MessageType.singleMessage.code
           ? json['toId']
           : null,
       groupId: (json['messageType'] is int
@@ -149,7 +149,7 @@ class IMessage {
                   : (json['messageType'] != null
                       ? (json['messageType'] as num).toInt()
                       : 0)) ==
-              IMessageType.groupMessage.code
+              MessageType.groupMessage.code
           ? json['groupId']
           : null,
       messageType: json['messageType'] is int
@@ -178,9 +178,9 @@ class IMessage {
       'messageType': messageType,
     };
 
-    if (messageType == IMessageType.singleMessage.code) {
+    if (messageType == MessageType.singleMessage.code) {
       data['toId'] = toId;
-    } else if (messageType == IMessageType.groupMessage.code) {
+    } else if (messageType == MessageType.groupMessage.code) {
       data['groupId'] = groupId;
     }
 
@@ -191,29 +191,54 @@ class IMessage {
   static MessageBody? _parseMessageBody(Map<String, dynamic>? json, int? type) {
     if (json == null || type == null) return null;
 
-    switch (type) {
-      case 1:
-        return TextMessageBody.fromJson(json);
-      case 2:
-        return ImageMessageBody.fromJson(json);
-      case 3:
-        return VideoMessageBody.fromJson(json);
-      case 4:
-        return AudioMessageBody.fromJson(json);
-      case 5:
-        return FileMessageBody.fromJson(json);
-      case 6:
-        return LocationMessageBody.fromJson(json);
-      case 7:
-        return ComplexMessageBody.fromJson(json);
-      case 8:
-        return GroupInviteMessageBody.fromJson(json);
-      case 10:
+    final contentType = MessageContentType.fromCode(type);
+
+    // 使用枚举匹配（新版 code）
+    switch (contentType) {
+      // 系统提示
+      case MessageContentType.tip:
         return SystemMessageBody.fromJson(json);
-      case 11:
+
+      // 文本类
+      case MessageContentType.text:
+      case MessageContentType.markdown:
+      case MessageContentType.richText:
+        return TextMessageBody.fromJson(json);
+
+      // 媒体类
+      case MessageContentType.image:
+      case MessageContentType.gif:
+        return ImageMessageBody.fromJson(json);
+      case MessageContentType.video:
+        return VideoMessageBody.fromJson(json);
+      case MessageContentType.audio:
+        return AudioMessageBody.fromJson(json);
+      case MessageContentType.sticker:
+        return ImageMessageBody.fromJson(json);
+
+      // 文件类
+      case MessageContentType.file:
+      case MessageContentType.archive:
+      case MessageContentType.document:
+        return FileMessageBody.fromJson(json);
+
+      // 富媒体类
+      case MessageContentType.location:
+        return LocationMessageBody.fromJson(json);
+      case MessageContentType.groupInvite:
+      case MessageContentType.groupJoinApprove:
+        return GroupInviteMessageBody.fromJson(json);
+
+      // 其它
+      case MessageContentType.complex:
+        return ComplexMessageBody.fromJson(json);
+      case MessageContentType.recall:
         return RecallMessageBody.fromJson(json);
-      case 12:
+      case MessageContentType.edit:
         return EditMessageBody.fromJson(json);
+
+      // 未知类型 - 尝试旧版 code 兼容
+      case MessageContentType.unknown:
       default:
         return null;
     }
@@ -235,7 +260,7 @@ class IMessage {
 
   /// 将 MessageReceiveDto 转换为 SingleMessage
   static SingleMessage toSingleMessage(IMessage dto, String ownerId) {
-    if (dto.messageType != IMessageType.singleMessage.code) {
+    if (dto.messageType != MessageType.singleMessage.code) {
       throw Exception('Cannot convert non-private message to SingleMessage');
     }
 
@@ -257,7 +282,7 @@ class IMessage {
 
   /// 将 MessageReceiveDto 转换为 GroupMessage
   static GroupMessage toGroupMessage(IMessage dto, String ownerId) {
-    if (dto.messageType != IMessageType.groupMessage.code) {
+    if (dto.messageType != MessageType.groupMessage.code) {
       throw Exception('Cannot convert non-group message to GroupMessage');
     }
 
@@ -434,6 +459,18 @@ class ImageMessageBody extends MessageBody {
     );
   }
 
+  static ImageMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody == null) return null;
+    if (messageBody is ImageMessageBody) return messageBody;
+    try {
+      final json = messageBody.toJson();
+      return ImageMessageBody.fromJson(json);
+    } catch (e) {
+      print('转换ImageMessageBody失败: $e');
+      return null;
+    }
+  }
+
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -468,6 +505,18 @@ class VideoMessageBody extends MessageBody {
     );
   }
 
+  static VideoMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody == null) return null;
+    if (messageBody is VideoMessageBody) return messageBody;
+    try {
+      final json = messageBody.toJson();
+      return VideoMessageBody.fromJson(json);
+    } catch (e) {
+      print('转换VideoMessageBody失败: $e');
+      return null;
+    }
+  }
+
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -499,6 +548,18 @@ class AudioMessageBody extends MessageBody {
           ? json['size']
           : (json['size'] != null ? (json['size'] as num).toInt() : null),
     );
+  }
+
+  static AudioMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody == null) return null;
+    if (messageBody is AudioMessageBody) return messageBody;
+    try {
+      final json = messageBody.toJson();
+      return AudioMessageBody.fromJson(json);
+    } catch (e) {
+      print('转换AudioMessageBody失败: $e');
+      return null;
+    }
   }
 
   @override
@@ -579,6 +640,18 @@ class LocationMessageBody extends MessageBody {
               ? double.tryParse(json['longitude'].toString())
               : null),
     );
+  }
+
+  static LocationMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody == null) return null;
+    if (messageBody is LocationMessageBody) return messageBody;
+    try {
+      final json = messageBody.toJson();
+      return LocationMessageBody.fromJson(json);
+    } catch (e) {
+      print('转换LocationMessageBody失败: $e');
+      return null;
+    }
   }
 
   @override
@@ -706,6 +779,18 @@ class GroupInviteMessageBody extends MessageBody {
     );
   }
 
+  static GroupInviteMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody == null) return null;
+    if (messageBody is GroupInviteMessageBody) return messageBody;
+    try {
+      final json = messageBody.toJson();
+      return GroupInviteMessageBody.fromJson(json);
+    } catch (e) {
+      print('转换GroupInviteMessageBody失败: $e');
+      return null;
+    }
+  }
+
   @override
   Map<String, dynamic> toJson() {
     return {
@@ -732,6 +817,18 @@ class SystemMessageBody extends MessageBody {
     return SystemMessageBody(
       text: json['text'],
     );
+  }
+
+  static SystemMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody == null) return null;
+    if (messageBody is SystemMessageBody) return messageBody;
+    try {
+      final json = messageBody.toJson();
+      return SystemMessageBody.fromJson(json);
+    } catch (e) {
+      print('转换SystemMessageBody失败: $e');
+      return null;
+    }
   }
 
   @override
@@ -776,6 +873,18 @@ class RecallMessageBody extends MessageBody {
               ? (json['chatType'] as num).toInt()
               : null),
     );
+  }
+
+  static RecallMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody == null) return null;
+    if (messageBody is RecallMessageBody) return messageBody;
+    try {
+      final json = messageBody.toJson();
+      return RecallMessageBody.fromJson(json);
+    } catch (e) {
+      print('转换RecallMessageBody失败: $e');
+      return null;
+    }
   }
 
   @override
@@ -857,9 +966,9 @@ class EditMessageBody extends MessageBody {
 
 /// 扩展方法：基于 MessageReceiveDto 判断类型
 extension MessageTypeExtension on IMessage {
-  bool get isSingleMessage => messageType == IMessageType.singleMessage.code;
+  bool get isSingleMessage => messageType == MessageType.singleMessage.code;
 
-  bool get isGroupMessage => messageType == IMessageType.groupMessage.code;
+  bool get isGroupMessage => messageType == MessageType.groupMessage.code;
 
   bool get isVideoMessage => messageContentType == 3;
 

@@ -22,7 +22,8 @@ class FriendRequestsPage extends GetView<ContactController> {
         elevation: 0,
         backgroundColor: AppColors.primary,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textWhite),
+          icon:
+              const Icon(Icons.arrow_back_ios_new, color: AppColors.textWhite),
           onPressed: () => Get.back(),
         ),
       ),
@@ -32,18 +33,21 @@ class FriendRequestsPage extends GetView<ContactController> {
           Expanded(
             child: Obx(() {
               if (controller.isLoadingRequests.value) {
-                return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary)));
+                return const Center(
+                    child: CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppColors.primary)));
               }
               if (controller.friendRequests.isEmpty) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(
-                    Icons.person_add_disabled,
-                    size: AppSizes.spacing64,
-                    color: AppColors.textDisabled,
-                  ),
+                    children: const [
+                      Icon(
+                        Icons.person_add_disabled,
+                        size: AppSizes.spacing64,
+                        color: AppColors.textDisabled,
+                      ),
                       SizedBox(height: AppSizes.spacing16),
                       Text(
                         '暂无好友申请',
@@ -58,7 +62,8 @@ class FriendRequestsPage extends GetView<ContactController> {
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
+                padding:
+                    const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
                 itemCount: controller.friendRequests.length,
                 itemBuilder: (context, index) {
                   return _buildRequestItem(

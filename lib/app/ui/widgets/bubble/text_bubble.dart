@@ -257,8 +257,10 @@ class _MessageBubbleState extends State<MessageBubble> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: AppSizes.iconSmall, color: AppColors.primary), // 图标从20减少到16
-            const SizedBox(height: AppSizes.spacing2), // 间距从3减少到2
+            Icon(icon, size: AppSizes.iconSmall, color: AppColors.primary),
+            // 图标从20减少到16
+            const SizedBox(height: AppSizes.spacing2),
+            // 间距从3减少到2
             Text(
               text,
               style: const TextStyle(
@@ -552,18 +554,23 @@ class BubbleMenuPainter extends CustomPainter {
     final path = Path();
 
     // 绘制气泡菜单主体（圆角矩形）
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height - AppSizes.spacing6); // 从8减少到6
-    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(AppSizes.radius10));
+    final rect = Rect.fromLTWH(
+        0, 0, size.width, size.height - AppSizes.spacing6); // 从8减少到6
+    final rrect =
+        RRect.fromRectAndRadius(rect, const Radius.circular(AppSizes.radius10));
     path.addRRect(rrect);
 
     // 绘制小箭头（指向消息气泡），位置根据菜单宽度自动居中
     // 调整了箭头大小以适应更小的菜单
     final arrowPath = Path();
     final centerX = size.width / 2;
-    arrowPath.moveTo(centerX - AppSizes.spacing6, size.height - AppSizes.spacing6); // 从8减少到6
+    arrowPath.moveTo(
+        centerX - AppSizes.spacing6, size.height - AppSizes.spacing6); // 从8减少到6
     arrowPath.lineTo(centerX, size.height);
-    arrowPath.lineTo(centerX + AppSizes.spacing6, size.height - AppSizes.spacing6); // 从8减少到6
-    arrowPath.lineTo(centerX - AppSizes.spacing6, size.height - AppSizes.spacing6); // 从8减少到6
+    arrowPath.lineTo(
+        centerX + AppSizes.spacing6, size.height - AppSizes.spacing6); // 从8减少到6
+    arrowPath.lineTo(
+        centerX - AppSizes.spacing6, size.height - AppSizes.spacing6); // 从8减少到6
     path.addPath(arrowPath, const Offset(0, 0));
 
     canvas.drawPath(path, paint);

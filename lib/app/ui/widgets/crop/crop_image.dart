@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_im/constants/app_sizes.dart';
 import 'package:get/get.dart';
 import 'package:image_cropper/image_cropper.dart';

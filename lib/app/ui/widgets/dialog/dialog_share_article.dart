@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_im/constants/app_colors.dart';
 import 'package:flutter_im/constants/app_sizes.dart';
 import 'package:get/get.dart';
+
 import 'dialog_base.dart';
 
 /// @class : ShareArticleDialog
@@ -44,7 +45,8 @@ class ShareArticleDialog extends StatelessWidget {
               ),
               const SizedBox(height: AppSizes.spacing20),
               Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing20),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacing20),
                   child: Text(
                     url,
                     style: const TextStyle(
@@ -57,24 +59,30 @@ class ShareArticleDialog extends StatelessWidget {
               const SizedBox(height: AppSizes.spacing20),
               Container(
                   height: AppSizes.spacing36,
-                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing20),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.spacing20),
                   child: TextField(
                     controller: _controller,
                     keyboardType: TextInputType.text,
                     textAlign: TextAlign.left,
                     autofocus: true,
                     maxLines: 1,
-                    style: const TextStyle(fontSize: AppSizes.font14, color: AppColors.textSecondary),
+                    style: const TextStyle(
+                        fontSize: AppSizes.font14,
+                        color: AppColors.textSecondary),
                     decoration: InputDecoration(
                         fillColor: AppColors.background,
                         filled: true,
                         hintText: '请输入标题',
-                        hintStyle: const TextStyle(fontSize: AppSizes.font14, color: AppColors.textHint),
+                        hintStyle: const TextStyle(
+                            fontSize: AppSizes.font14,
+                            color: AppColors.textHint),
                         border: _getEditBorder(false),
                         focusedBorder: _getEditBorder(true),
                         enabledBorder: _getEditBorder(false),
-                        contentPadding:
-                            const EdgeInsets.only(left: AppSizes.spacing10, right: AppSizes.spacing10)),
+                        contentPadding: const EdgeInsets.only(
+                            left: AppSizes.spacing10,
+                            right: AppSizes.spacing10)),
                   )),
               const SizedBox(height: AppSizes.spacing20),
               Row(
@@ -89,14 +97,18 @@ class ShareArticleDialog extends StatelessWidget {
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            vertical: AppSizes.spacing6, horizontal: AppSizes.spacing12),
+                            vertical: AppSizes.spacing6,
+                            horizontal: AppSizes.spacing12),
                         decoration: BoxDecoration(
                           color: AppColors.wechat,
-                          borderRadius: BorderRadius.circular(AppSizes.radius20),
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radius20),
                         ),
                         child: const Text(
                           '分享',
-                          style: TextStyle(fontSize: AppSizes.font14, color: AppColors.textWhite),
+                          style: TextStyle(
+                              fontSize: AppSizes.font14,
+                              color: AppColors.textWhite),
                         ),
                       ))
                 ],

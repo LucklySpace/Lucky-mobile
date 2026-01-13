@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart' hide MessageType;
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -97,7 +97,8 @@ class _VideoCallPageState extends State<VideoCallPage>
 
   void _handleCallTermination(String message) {
     Get.snackbar('提示', message,
-        backgroundColor: AppColors.surface, duration: const Duration(seconds: 2));
+        backgroundColor: AppColors.surface,
+        duration: const Duration(seconds: 2));
   }
 
   Future<void> _startRemoteStream() async {
@@ -161,7 +162,8 @@ class _VideoCallPageState extends State<VideoCallPage>
     } catch (e) {
       Get.log('初始化视频失败: $e');
       Get.snackbar('错误', '视频初始化失败',
-          backgroundColor: AppColors.surface, duration: const Duration(seconds: 2));
+          backgroundColor: AppColors.surface,
+          duration: const Duration(seconds: 2));
     }
   }
 
@@ -185,8 +187,8 @@ class _VideoCallPageState extends State<VideoCallPage>
             'fromId': _userId,
             'toId': _friendId,
             'type': _isRemoteSuccess
-                ? IMessageContentType.rtcHangup.code
-                : IMessageContentType.rtcCancel.code
+                ? MessageType.rtcHangup.code
+                : MessageType.rtcCancel.code
           });
         } catch (e) {
           Get.log('发送挂断消息时出错: $e');
@@ -301,7 +303,8 @@ class _VideoCallPageState extends State<VideoCallPage>
         return const Center(
           child: Text(
             '等待连接...',
-            style: TextStyle(color: AppColors.textWhite, fontSize: AppSizes.font12),
+            style: TextStyle(
+                color: AppColors.textWhite, fontSize: AppSizes.font12),
           ),
         );
       }

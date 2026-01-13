@@ -3,15 +3,15 @@ import 'package:flutter_im/app/services/nfc_service.dart';
 import 'package:get/get.dart';
 
 import '../app/api/api_service.dart';
-import '../app/services/event_bus_service.dart';
-import '../app/services/notification_service.dart';
-import '../app/services/websocket_service.dart';
 import '../app/controller/chat_controller.dart';
 import '../app/controller/contact_controller.dart';
 import '../app/controller/home_controller.dart';
 import '../app/controller/login_controller.dart';
 import '../app/controller/search_controller.dart';
 import '../app/controller/user_controller.dart';
+import '../app/services/event_bus_service.dart';
+import '../app/services/notification_service.dart';
+import '../app/services/websocket_service.dart';
 
 class AppAllBinding extends Bindings {
   @override
@@ -29,7 +29,7 @@ class AppAllBinding extends Bindings {
     Get.put(HomeController(), permanent: true);
 
     Get.put(WalletController(), permanent: true);
-   
+
     Get.put(SearchController());
     Get.put(LoginController());
   }

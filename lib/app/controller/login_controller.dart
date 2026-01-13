@@ -1,27 +1,37 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_im/exceptions/app_exception.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 
 import '../../routes/app_routes.dart';
+import '../../utils/validator.dart';
 import '../core/handlers/error_handler.dart';
-import 'package:flutter_im/exceptions/app_exception.dart';
 import 'user_controller.dart';
 
 /// 登录类型枚举
 enum AuthType {
-  password, // 密码登录
-  verifyCode, // 验证码登录
+  /// 密码登录
+  password,
+
+  /// 验证码登录
+  verifyCode,
 }
 
-/// 登录控制器，管理登录页面逻辑，包括密码/验证码登录、凭证存储和验证码倒计时
+/// 登录控制器
+///
+/// 功能：
+/// - 密码/验证码登录
+/// - 凭证安全存储
+/// - 验证码倒计时
+/// - 输入验证
 class LoginController extends GetxController
     with GetSingleTickerProviderStateMixin {
-  // 常量定义
+  // ==================== 常量定义 ====================
+
   static const _keySavedUsername = 'saved_username';
   static const _keySavedPassword = 'saved_password';
-  static const _phoneRegExp = r'^1[3-9]\d{9}$'; // 手机号正则表达式
   static const _countdownSeconds = 60; // 验证码倒计时（秒）
 
   // 依赖注入
@@ -103,19 +113,22 @@ class LoginController extends GetxController
 
   /// 发送验证码
   Future<void> sendVerificationCode() async {
-    if (!canSendCode.value || principalController.text.isEmpty) {
-      _showError(BusinessException('请输入手机号'));
+    // 检查是否可以发送
+    if (!canSendCode.value) {
+      _showError(BusinessException('请等待倒计时结束'));
       return;
     }
 
-    if (!_isValidPhoneNumber()) {
-      _showError(BusinessException('请输入正确的手机号格式'));
+    // 验证手机号
+    final phoneError = Validator.validatePhone(principalController.text);
+    if (phoneError != null) {
+      _showError(ValidationException(phoneError));
       return;
     }
 
     try {
       await _userController.sendVerificationCode(principalController.text);
-      Get.snackbar('提示', '验证码已发送');
+      ErrorHandler.showSuccess('验证码已发送');
       _startCountdown();
     } catch (e) {
       _showError(e);
@@ -223,23 +236,35 @@ class LoginController extends GetxController
 
   /// 验证输入是否有效
   bool _validateInput() {
-    if (principalController.text.isEmpty ||
-        credentialsController.text.isEmpty) {
+    final principal = principalController.text.trim();
+    final credentials = credentialsController.text.trim();
+
+    // 检查是否为空
+    if (principal.isEmpty || credentials.isEmpty) {
       final message =
           currentAuthType == AuthType.password ? '请输入账号和密码' : '请输入手机号和验证码';
-      _showError(BusinessException(message));
+      _showError(ValidationException(message));
       return false;
     }
 
-    if (currentAuthType == AuthType.verifyCode && !_isValidPhoneNumber()) {
-      _showError(BusinessException('请输入正确的手机号格式'));
-      return false;
+    // 验证码登录时，验证手机号格式
+    if (currentAuthType == AuthType.verifyCode) {
+      final phoneError = Validator.validatePhone(principal);
+      if (phoneError != null) {
+        _showError(ValidationException(phoneError));
+        return false;
+      }
+    }
+
+    // 密码登录时，验证密码格式
+    if (currentAuthType == AuthType.password) {
+      final passwordError = Validator.validatePassword(credentials);
+      if (passwordError != null) {
+        _showError(ValidationException(passwordError));
+        return false;
+      }
     }
 
     return true;
   }
-
-  /// 验证手机号格式
-  bool _isValidPhoneNumber() =>
-      RegExp(_phoneRegExp).hasMatch(principalController.text);
 }

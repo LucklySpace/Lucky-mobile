@@ -83,7 +83,8 @@ class ContactsPage extends GetView<ContactController> {
               ),
               child: Text(
                 '${controller.newFriendRequestCount.value}',
-                style: const TextStyle(color: AppColors.textWhite, fontSize: AppSizes.font12),
+                style: const TextStyle(
+                    color: AppColors.textWhite, fontSize: AppSizes.font12),
               ),
             )
           : const SizedBox()),

@@ -144,8 +144,7 @@ class LoginPage extends GetView<LoginController> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radius4),
-                borderSide: BorderSide(
-                    color: AppColors.primary, width: 1.5),
+                borderSide: BorderSide(color: AppColors.primary, width: 1.5),
               ),
               prefixIcon: Icon(
                 isPasswordMode ? Icons.person_outline : Icons.phone_outlined,
@@ -183,8 +182,7 @@ class LoginPage extends GetView<LoginController> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radius4),
-                borderSide: BorderSide(
-                    color: AppColors.primary, width: 1.5),
+                borderSide: BorderSide(color: AppColors.primary, width: 1.5),
               ),
               prefixIcon: Icon(
                 isPasswordMode ? Icons.lock_outline : Icons.security_outlined,
@@ -269,7 +267,8 @@ class LoginPage extends GetView<LoginController> {
                       : controller.handleLogin,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                        vertical: AppSizes.spacing14), // 14
+                        vertical: AppSizes.spacing14),
+                    // 14
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(

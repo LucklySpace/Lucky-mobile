@@ -133,16 +133,15 @@ class FileBubble extends StatelessWidget {
           child: Container(
             padding: _bubblePadding,
             decoration: BoxDecoration(
-              color: isMe
-                  ? AppColors.primary.withOpacity(0.1)
-                  : AppColors.surface,
+              color:
+                  isMe ? AppColors.primary.withOpacity(0.1) : AppColors.surface,
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(AppSizes.radius16),
                 topRight: const Radius.circular(AppSizes.radius16),
-                bottomLeft:
-                    Radius.circular(isMe ? AppSizes.radius16 : AppSizes.radius4),
-                bottomRight:
-                    Radius.circular(isMe ? AppSizes.radius4 : AppSizes.radius16),
+                bottomLeft: Radius.circular(
+                    isMe ? AppSizes.radius16 : AppSizes.radius4),
+                bottomRight: Radius.circular(
+                    isMe ? AppSizes.radius4 : AppSizes.radius16),
               ),
             ),
             child: Row(

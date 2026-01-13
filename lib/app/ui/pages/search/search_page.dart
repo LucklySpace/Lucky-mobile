@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
+import '../../../../utils/i18n_util.dart';
 
 /// 搜索页面
 ///
@@ -51,16 +52,16 @@ class SearchPage extends GetView<SearchController> {
         autofocus: true,
         textAlignVertical: TextAlignVertical.center,
         decoration: InputDecoration(
-          hintText: '搜索聊天记录',
+          hintText: I18n.t('search.chat_records'),
           hintStyle: const TextStyle(color: AppColors.textHint),
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: AppSizes.spacing8, vertical: 0),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.spacing8, vertical: 0),
           isDense: true,
-          prefixIcon:
-              const Icon(Icons.search, color: AppColors.textHint, size: AppSizes.font18),
-          prefixIconConstraints:
-              const BoxConstraints(minWidth: AppSizes.spacing40, minHeight: AppSizes.spacing32),
+          prefixIcon: const Icon(Icons.search,
+              color: AppColors.textHint, size: AppSizes.font18),
+          prefixIconConstraints: const BoxConstraints(
+              minWidth: AppSizes.spacing40, minHeight: AppSizes.spacing32),
         ),
         style: const TextStyle(fontSize: AppSizes.font16),
         //onSubmitted: controller.performSearch,
@@ -74,7 +75,7 @@ class SearchPage extends GetView<SearchController> {
       onPressed: () => Get.toNamed('${Routes.HOME}'),
       style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing8)),
-      child: const Text('取消'),
+      child: Text(I18n.t('cancel')),
     );
   }
 
@@ -143,7 +144,7 @@ class SearchPage extends GetView<SearchController> {
 //                   Text(result.name, style: const TextStyle(fontSize: AppSizes.font14)),
 //                   const SizedBox(height: AppSizes.spacing2),
 //                   Text(
-//                     '${result.messageCount}条相关聊天记录',
+//                     '${result.messageCount}${I18n.t('search.related_records')}',
 //                     style: const TextStyle(fontSize: AppSizes.font12, color: AppColors.textHint),
 //                   ),
 //                 ],
@@ -163,8 +164,8 @@ class SearchPage extends GetView<SearchController> {
 // Widget _buildSearchHistory(TextEditingController searchTextController) {
 //   return Obx(() {
 //     if (controller.searchHistory.isEmpty) {
-//       return const Center(
-//         child: Text('暂无搜索历史', style: TextStyle(color: AppColors.textHint)),
+//       return Center(
+//         child: Text(I18n.t('search.no_history'), style: const TextStyle(color: AppColors.textHint)),
 //       );
 //     }
 //     return ListView(
@@ -183,9 +184,9 @@ class SearchPage extends GetView<SearchController> {
 //   return Row(
 //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
 //     children: [
-//       const Text(
-//         '搜索历史',
-//         style: TextStyle(fontSize: AppSizes.font16, fontWeight: FontWeight.bold),
+//       Text(
+//         I18n.t('search.history'),
+//         style: const TextStyle(fontSize: AppSizes.font16, fontWeight: FontWeight.bold),
 //       ),
 //       IconButton(
 //         icon: const Icon(Icons.delete_outline),

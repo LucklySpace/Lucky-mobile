@@ -53,7 +53,8 @@ class WalletTransferPage extends GetView<WalletController> {
                     decoration: InputDecoration(
                       hintText: '输入钱包地址',
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.radius12)),
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radius12)),
                       prefixIcon: const Icon(Icons.wallet),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.paste),
@@ -81,7 +82,8 @@ class WalletTransferPage extends GetView<WalletController> {
                       hintText: '0.00',
                       suffixText: 'COIN',
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.radius12)),
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radius12)),
                       prefixIcon: const Icon(Icons.attach_money),
                     ),
                     onChanged: (v) => controller.computeEstimatedFee(v),
@@ -91,9 +93,9 @@ class WalletTransferPage extends GetView<WalletController> {
                       if (val == null || val <= 0) return '金额无效';
                       final feeVal =
                           double.tryParse(controller.calculateFee(v)) ?? 0.0;
-                      final balance =
-                          double.tryParse(controller.wallet.value?.balance ?? '0') ??
-                              0.0;
+                      final balance = double.tryParse(
+                              controller.wallet.value?.balance ?? '0') ??
+                          0.0;
                       if ((val + feeVal) > balance) {
                         return '余额不足';
                       }
@@ -126,12 +128,14 @@ class WalletTransferPage extends GetView<WalletController> {
                       },
                       style: ElevatedButton.styleFrom(
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.radius12),
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radius12),
                         ),
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.textWhite,
                       ),
-                      child: const Text('确认转账', style: TextStyle(fontSize: AppSizes.font16)),
+                      child: const Text('确认转账',
+                          style: TextStyle(fontSize: AppSizes.font16)),
                     ),
                   ),
                 ],

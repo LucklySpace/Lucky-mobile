@@ -69,7 +69,7 @@ class ImageBubble extends StatelessWidget {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(AppSizes.radius12),
                       child: CachedNetworkImage(
-                        imageUrl: message.messageBody.toString(),
+                        imageUrl: _buildMessageUrl(message),
                         fit: BoxFit.cover,
                         placeholder: (context, url) => const Center(
                           child: CircularProgressIndicator(),
@@ -155,5 +155,16 @@ class ImageBubble extends StatelessWidget {
   String _formatTime(int timestamp) {
     final DateTime time = DateTime.fromMillisecondsSinceEpoch(timestamp);
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _buildMessageUrl(IMessage message) {
+    final path =
+        ImageMessageBody.fromMessageBody(message.messageBody)?.path ?? '';
+
+    if (path.isEmpty) {
+      return "";
+    }
+
+    return path;
   }
 }

@@ -60,7 +60,8 @@ class ChatPage extends GetView<ChatController> {
       ),
       actions: [
         IconButton(
-          icon: Iconfont.buildIcon(icon: Iconfont.search, size: AppSizes.iconMedium),
+          icon: Iconfont.buildIcon(
+              icon: Iconfont.search, size: AppSizes.iconMedium),
           onPressed: () => controller.openSearch(),
           tooltip: '搜索',
         ),
@@ -84,14 +85,18 @@ class ChatPage extends GetView<ChatController> {
           placeholder: (context, url) => Container(
             color: AppColors.border,
             child: Iconfont.buildIcon(
-                icon: Iconfont.person, size: AppSizes.iconMedium, color: AppColors.textHint),
+                icon: Iconfont.person,
+                size: AppSizes.iconMedium,
+                color: AppColors.textHint),
           ),
           errorWidget: (context, url, error) {
             debugPrint('加载头像失败: $error');
             return Container(
               color: AppColors.border,
               child: Iconfont.buildIcon(
-                  icon: Iconfont.person, size: AppSizes.iconMedium, color: AppColors.textHint),
+                  icon: Iconfont.person,
+                  size: AppSizes.iconMedium,
+                  color: AppColors.textHint),
             );
           },
         ),
@@ -110,7 +115,8 @@ class ChatPage extends GetView<ChatController> {
                   .textTheme
                   .titleLarge
                   ?.copyWith(fontWeight: FontWeight.bold) ??
-              const TextStyle(fontSize: AppSizes.font20, fontWeight: FontWeight.bold),
+              const TextStyle(
+                  fontSize: AppSizes.font20, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -138,7 +144,9 @@ class ChatPage extends GetView<ChatController> {
         child: Row(
           children: [
             Iconfont.buildIcon(
-                icon: Iconfont.add, size: AppSizes.font20, color: AppColors.textSecondary),
+                icon: Iconfont.add,
+                size: AppSizes.font20,
+                color: AppColors.textSecondary),
             const SizedBox(width: AppSizes.spacing12),
             const Text('创建群聊'),
           ],
@@ -149,7 +157,9 @@ class ChatPage extends GetView<ChatController> {
         child: Row(
           children: [
             Iconfont.buildIcon(
-                icon: Iconfont.scan, size: AppSizes.font20, color: AppColors.textSecondary),
+                icon: Iconfont.scan,
+                size: AppSizes.font20,
+                color: AppColors.textSecondary),
             const SizedBox(width: AppSizes.spacing12),
             const Text('扫一扫'),
           ],
@@ -160,7 +170,9 @@ class ChatPage extends GetView<ChatController> {
         child: Row(
           children: [
             Iconfont.buildIcon(
-                icon: Iconfont.addFriend, size: AppSizes.font20, color: AppColors.textSecondary),
+                icon: Iconfont.addFriend,
+                size: AppSizes.font20,
+                color: AppColors.textSecondary),
             const SizedBox(width: AppSizes.spacing12),
             const Text('加好友/群'),
           ],
@@ -181,7 +193,7 @@ class ChatPage extends GetView<ChatController> {
       itemBuilder: (context, index) {
         final chat = chatList[index];
         return GestureDetector(
-          onTap: () => controller.openChat(chat),
+          onTap: () => controller.changeCurrentChat(chat),
           child: Container(
             color: AppColors.surface,
             child: Padding(
@@ -203,7 +215,8 @@ class ChatPage extends GetView<ChatController> {
                 .textTheme
                 .bodyLarge
                 ?.copyWith(color: AppColors.textSecondary) ??
-            const TextStyle(fontSize: AppSizes.font16, color: AppColors.textSecondary),
+            const TextStyle(
+                fontSize: AppSizes.font16, color: AppColors.textSecondary),
       ),
     );
   }

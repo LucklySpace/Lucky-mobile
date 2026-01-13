@@ -98,8 +98,7 @@ Map<String, dynamic> _anyToJson(Any any) {
       // Struct 提供 toProto3Json() 或者 fields 转换
       try {
         final dynamic structJson = s.toProto3Json();
-        if (structJson is Map<String, dynamic> &&
-            structJson.containsKey('value')) return structJson['value'];
+        if (structJson is Map<String, dynamic>) return structJson;
       } catch (_) {
         // 退到手动转换 fields
         final Map<String, dynamic> converted = {};

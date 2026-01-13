@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../constants/app_colors.dart';
-import '../../../../constants/app_sizes.dart';
 import '../../../../constants/app_message.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../controller/chat_controller.dart';
 import '../../widgets/emoji/emoji_picker.dart';
 
@@ -92,7 +92,7 @@ class _MessageInputState extends State<MessageInput> {
         text.endsWith(_mentionTrigger) &&
         (text.length == 1 || text[text.length - 2] == ' ')) {
       if (widget.controller.currentChat.value?.chatType ==
-          IMessageType.groupMessage.code) {
+          MessageType.groupMessage.code) {
         _showMentionDrawer();
       }
     }
@@ -281,7 +281,8 @@ class _MessageInputState extends State<MessageInput> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radius16)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppSizes.radius16)),
       ),
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.5,
@@ -329,8 +330,7 @@ class _MessageInputState extends State<MessageInput> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(_inputBorderRadius),
-        border:
-            Border.all(color: AppColors.border, width: AppSizes.spacing1),
+        border: Border.all(color: AppColors.border, width: AppSizes.spacing1),
       ),
       child: TextField(
         controller: _richTextController,
@@ -348,8 +348,8 @@ class _MessageInputState extends State<MessageInput> {
               ?.copyWith(color: AppColors.textHint),
           border: InputBorder.none,
           isDense: true,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: AppSizes.spacing16, vertical: AppSizes.spacing8),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.spacing16, vertical: AppSizes.spacing8),
         ),
         style: Theme.of(context)
             .textTheme
@@ -411,8 +411,9 @@ class _MessageInputState extends State<MessageInput> {
                       size: _iconSize,
                     ),
                     padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: AppSizes.spacing32, minHeight: AppSizes.spacing36),
+                    constraints: const BoxConstraints(
+                        minWidth: AppSizes.spacing32,
+                        minHeight: AppSizes.spacing36),
                   ),
                 ),
                 const SizedBox(width: AppSizes.spacing2),
@@ -428,8 +429,9 @@ class _MessageInputState extends State<MessageInput> {
                       size: _iconSize,
                     ),
                     padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: AppSizes.spacing32, minHeight: AppSizes.spacing36),
+                    constraints: const BoxConstraints(
+                        minWidth: AppSizes.spacing32,
+                        minHeight: AppSizes.spacing36),
                   ),
                 ),
               ],
@@ -462,7 +464,8 @@ class _MessageInputState extends State<MessageInput> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16, vertical: AppSizes.spacing4),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.spacing16, vertical: AppSizes.spacing4),
           color: AppColors.surface,
           child: Row(
             children: [

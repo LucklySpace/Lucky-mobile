@@ -40,7 +40,8 @@ class WalletTransactionDetailPage extends GetView<WalletController> {
             const SizedBox(height: AppSizes.spacing16),
             Text(
               _getTransactionTitle(transaction, isReceive),
-              style: const TextStyle(fontSize: AppSizes.font18, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  fontSize: AppSizes.font18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSizes.spacing8),
             Text(
@@ -53,7 +54,8 @@ class WalletTransactionDetailPage extends GetView<WalletController> {
             ),
             const SizedBox(height: AppSizes.spacing8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing12, vertical: AppSizes.spacing4),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.spacing12, vertical: AppSizes.spacing4),
               decoration: BoxDecoration(
                 color: _getStatusColor(transaction.statusEnum).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(AppSizes.radius12),
@@ -91,9 +93,11 @@ class WalletTransactionDetailPage extends GetView<WalletController> {
                         _confirmTransaction(transaction.transactionId),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.success,
-                      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: AppSizes.spacing16),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.radius12)),
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radius12)),
                     ),
                     child: const Text('确认收款'),
                   ),
@@ -106,13 +110,15 @@ class WalletTransactionDetailPage extends GetView<WalletController> {
                     onPressed: () =>
                         _returnTransaction(transaction.transactionId),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: AppSizes.spacing16),
                       side: const BorderSide(color: AppColors.error),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.radius12)),
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.radius12)),
                     ),
-                    child:
-                        const Text('退回转账', style: TextStyle(color: AppColors.error)),
+                    child: const Text('退回转账',
+                        style: TextStyle(color: AppColors.error)),
                   ),
                 ),
             ],

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_im/exceptions/app_exception.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as webrtc;
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:get/get.dart';
@@ -7,7 +8,6 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../utils/objects.dart';
 import '../api/api_service.dart';
 import '../core/handlers/error_handler.dart';
-import 'package:flutter_im/exceptions/app_exception.dart';
 
 /// WebRTC 控制器，管理视频通话的推流、拉流及设备配置
 /// 1. 为本地预览创建仅含视频轨道的流，避免音频回路导致啸声。

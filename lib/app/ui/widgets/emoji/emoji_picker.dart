@@ -175,7 +175,8 @@ class _EmojiPickerState extends State<EmojiPicker> {
           ? pack.expressions.first.unicode ?? '😀'
           : '😀';
       return Tab(
-          child: Text(emoji, style: const TextStyle(fontSize: AppSizes.font18)));
+          child:
+              Text(emoji, style: const TextStyle(fontSize: AppSizes.font18)));
     }
     final imagePath =
         pack.expressions.isNotEmpty ? pack.expressions.first.imageURL : null;
@@ -284,8 +285,8 @@ class _EmojiPickerState extends State<EmojiPicker> {
       onTap: () => _onEmojiTap(expression, ExpressionType.emoji),
       behavior: HitTestBehavior.opaque,
       child: Center(
-          child:
-              Text(expression.unicode!, style: const TextStyle(fontSize: AppSizes.font24))),
+          child: Text(expression.unicode!,
+              style: const TextStyle(fontSize: AppSizes.font24))),
     );
   }
 

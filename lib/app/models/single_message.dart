@@ -45,7 +45,7 @@ class SingleMessage {
     required this.messageBody,
     required this.messageContentType,
     required this.messageTime,
-    required this.messageType, // IMessageType.SINGLE_MESSAGE.code
+    required this.messageType, // MessageType.SINGLE_MESSAGE.code
     required this.readStatus,
     required this.sequence,
     this.extra,
@@ -77,7 +77,7 @@ class SingleMessage {
       messageContentType: json['messageContentType'] as int,
       messageTime: json['messageTime'] as int,
       messageType: json['messageType'] as int? ?? 1,
-      // IMessageType.SINGLE_MESSAGE.code
+      // MessageType.SINGLE_MESSAGE.code
       readStatus: json['readStatus'] as int,
       sequence: json['sequence'] as int,
       extra: json['extra'] as String?,

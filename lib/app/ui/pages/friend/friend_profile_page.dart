@@ -24,13 +24,14 @@ class FriendProfilePage extends StatelessWidget {
   static const _dividerColor = AppColors.divider; // 分割线颜色
   static const _nameStyle =
       TextStyle(fontSize: AppSizes.font22, fontWeight: FontWeight.w600); // 名称样式
-  static const _infoStyle = TextStyle(fontSize: AppSizes.font14, color: AppColors.textSecondary); // 信息样式
-  static const _idBadgePadding =
-      EdgeInsets.symmetric(horizontal: AppSizes.spacing8, vertical: AppSizes.spacing4); // ID 徽章边距
+  static const _infoStyle = TextStyle(
+      fontSize: AppSizes.font14, color: AppColors.textSecondary); // 信息样式
+  static const _idBadgePadding = EdgeInsets.symmetric(
+      horizontal: AppSizes.spacing8, vertical: AppSizes.spacing4); // ID 徽章边距
   static const _buttonHeight = 50.0; // 按钮高度
   static const _buttonSpacing = AppSizes.spacing12; // 按钮间距
-  static const _errorStyle =
-      TextStyle(fontSize: AppSizes.font16, color: AppColors.textSecondary); // 错误提示样式
+  static const _errorStyle = TextStyle(
+      fontSize: AppSizes.font16, color: AppColors.textSecondary); // 错误提示样式
   static const _keyUserId = 'userId'; // 存储用户 ID 的键
 
   const FriendProfilePage({super.key});
@@ -136,13 +137,15 @@ class FriendProfilePage extends StatelessWidget {
               fit: BoxFit.cover,
               placeholder: (context, url) => Container(
                 color: AppColors.background,
-                child: const Icon(Icons.person, size: AppSizes.spacing40, color: AppColors.textHint),
+                child: const Icon(Icons.person,
+                    size: AppSizes.spacing40, color: AppColors.textHint),
               ),
               errorWidget: (context, url, error) {
                 debugPrint('加载头像失败: $error');
                 return Container(
                   color: AppColors.background,
-                  child: const Icon(Icons.error, size: AppSizes.spacing40, color: AppColors.textHint),
+                  child: const Icon(Icons.error,
+                      size: AppSizes.spacing40, color: AppColors.textHint),
                 );
               },
             ),
@@ -182,7 +185,9 @@ class FriendProfilePage extends StatelessWidget {
                 const SizedBox(height: AppSizes.spacing8),
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: AppSizes.iconSmall, color: AppColors.textSecondary),
+                    const Icon(Icons.location_on,
+                        size: AppSizes.iconSmall,
+                        color: AppColors.textSecondary),
                     const SizedBox(width: AppSizes.spacing4),
                     Text(
                       friend.location ?? '未知地点',
@@ -255,7 +260,10 @@ class FriendProfilePage extends StatelessWidget {
         icon: Icon(data.icon, size: AppSizes.font20),
         label: Text(
           data.text,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: AppSizes.font16),
+          style: Theme.of(context)
+              .textTheme
+              .labelLarge
+              ?.copyWith(fontSize: AppSizes.font16),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.surface,

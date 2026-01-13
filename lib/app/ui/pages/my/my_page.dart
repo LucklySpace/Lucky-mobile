@@ -121,14 +121,15 @@ class MyPage extends StatelessWidget {
                       ? CachedNetworkImage(
                           imageUrl: avatarUrl,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(
-                              child: CircularProgressIndicator()),
+                          placeholder: (context, url) =>
+                              const Center(child: CircularProgressIndicator()),
                           errorWidget: (context, url, error) {
                             debugPrint('加载头像失败: $error');
                             return Container(
                               color: _avatarPlaceholderColor.withOpacity(0.3),
                               child: const Icon(Icons.person,
-                                  size: AppSizes.spacing45, color: AppColors.white),
+                                  size: AppSizes.spacing45,
+                                  color: AppColors.white),
                             );
                           },
                         )

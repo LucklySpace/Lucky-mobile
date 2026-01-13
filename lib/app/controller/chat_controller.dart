@@ -3,30 +3,44 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_im/exceptions/app_exception.dart';
 import 'package:flutter_im/utils/objects.dart';
+import 'package:flutter_im/utils/performance.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../constants/app_constant.dart';
 import '../../constants/app_message.dart';
 import '../../routes/app_routes.dart';
+import '../../utils/validator.dart';
 import '../api/api_service.dart';
 import '../core/handlers/error_handler.dart';
 import '../database/app_database.dart';
 import '../models/chats.dart';
 import '../models/friend.dart';
+import '../models/group_member.dart';
 import '../models/message_receive.dart';
 import '../services/event_bus_service.dart';
-import '../services/notification_service.dart';
 import '../ui/widgets/video/video_call_snackbar.dart';
 
-/// 聊天控制器，管理会话列表、消息列表及相关操作
+/// 聊天控制器
+///
+/// 功能：
+/// - 管理会话列表和消息列表
+/// - 处理消息发送和接收
+/// - 支持分页加载
+/// - 视频通话管理
+/// - 性能优化（防抖、节流、批处理）
 class ChatController extends GetxController {
   // 会话列表，存储所有聊天会话
   final RxList<Chats> chatList = <Chats>[].obs;
 
   // 当前会话的消息列表
   final RxList<IMessage> messageList = <IMessage>[].obs;
+
+  // 群成员列表
+  final RxMap<String, Map<String, GroupMember>> groupMembers =
+      <String, Map<String, GroupMember>>{}.obs;
 
   // 当前选中的会话
   final Rx<Chats?> currentChat = Rx<Chats?>(null);
@@ -42,7 +56,6 @@ class ChatController extends GetxController {
 
   // API 服务
   late final ApiService _apiService;
-  late final LocalNotificationService _localNotificationService;
 
   final _storage = GetStorage();
 
@@ -54,22 +67,45 @@ class ChatController extends GetxController {
   final userId = ''.obs;
 
   // 分页参数
-  final int pageSize = 20;
+  final int pageSize = AppConstants.defaultPageSize;
   final RxBool isLoadingMore = false.obs;
   final RxBool hasMoreMessages = true.obs;
   var _currentPage = 0;
+
+  // 性能优化：防抖控制器
+  late final DebounceController _searchDebounce;
+  late final DebounceController _messageDebounce;
 
   @override
   void onInit() {
     super.onInit();
     _apiService = Get.find<ApiService>();
-    _localNotificationService = Get.find<LocalNotificationService>();
+
+    // 初始化防抖控制器
+    _searchDebounce = DebounceController(
+      duration: Duration(milliseconds: AppConstants.debounceDelayMs),
+    );
+    _messageDebounce = DebounceController(
+      duration: const Duration(milliseconds: 300),
+    );
   }
 
+  @override
+  void onClose() {
+    // 清理资源
+    _searchDebounce.dispose();
+    _messageDebounce.dispose();
+    super.onClose();
+  }
+
+  /// 从本地存储获取用户ID
   void getUserId() {
     final storedUserId = _storage.read(_keyUserId);
-    if (storedUserId != null) {
+    if (storedUserId != null && storedUserId.toString().isNotEmpty) {
       userId.value = storedUserId.toString();
+      Get.log('✅ 用户ID已加载: ${userId.value}');
+    } else {
+      Get.log('⚠️ 未找到存储的用户ID');
     }
   }
 
@@ -77,11 +113,11 @@ class ChatController extends GetxController {
   Future<void> handleCreateOrUpdateChat(
       IMessage dto, String targetId, bool isMe) async {
     final chats =
-        await _db.chatsDao.getChatByOwnerIdAndToId(userId.value!, targetId!);
-    if (chats?.isNotEmpty ?? false) {
-      await _updateChat(chats!.first, dto, isMe);
+        await _db.chatsDao.getChatByOwnerIdAndToId(userId.value, targetId);
+    if (chats != null && chats.isNotEmpty) {
+      await _updateChat(chats.first, dto, isMe);
     } else {
-      await _createChat(userId.value!, targetId!, dto);
+      await _createChat(userId.value, targetId, dto);
     }
   }
 
@@ -108,7 +144,8 @@ class ChatController extends GetxController {
 
   /// 创建新会话
   Future<void> _createChat(String ownerId, String id, IMessage dto) async {
-    final res = await _apiService.getChat({'ownerId': ownerId, 'toId': id});
+    final res = await _apiService.createChat(
+        {'fromId': ownerId, 'toId': id, 'chatType': dto.messageType});
 
     await _handleApiResponse(res, onSuccess: (data) async {
       if (data == null) return;
@@ -154,34 +191,33 @@ class ChatController extends GetxController {
   }
 
   /// 初始化会话列表
+  ///
+  /// 从本地数据库加载所有会话并按时间排序
   Future<void> fetchChats() async {
+    // 确保userId已加载
     if (userId.isEmpty) {
       getUserId();
+    }
+
+    // userId仍为空，无法继续
+    if (userId.isEmpty) {
+      _showError('用户ID未初始化，无法加载会话列表');
+      return;
     }
 
     try {
       isLoading.value = true;
       chatList.clear();
 
-      // final res = await _apiService
-      //     .getChatList({'fromId': userId.value, 'sequence': 0});
-      // _handleApiResponse(res, onSuccess: (data) {
-      //   final chats = data ?? {};
-      //   if (chats is List<dynamic>) {
-      //
-      //     for (var dynamic in chats) {
-      //       Chats chat = Chats.fromJson(dynamic);
-      //       chatList.add(chat);
-      //     }
-      //     _sortChatList();
-      //   }
-      //   // 成功标记已读
-      // }, errorMessage: '获取会话列表失败');
-
+      // 从本地数据库加载会话列表
       final chats = await _db.chatsDao.getAllChats(userId.value);
-      if (chats?.isNotEmpty ?? false) {
-        chatList.addAll(chats as Iterable<Chats>);
+
+      if (chats != null && chats.isNotEmpty) {
+        chatList.addAll(chats);
         _sortChatList();
+        Get.log('✅ 已加载 ${chats.length} 个会话');
+      } else {
+        Get.log('📭 暂无会话记录');
       }
     } catch (e) {
       ErrorHandler.handle(AppException('加载聊天列表失败', details: e));
@@ -201,10 +237,10 @@ class ChatController extends GetxController {
 
     try {
       isLoadingMore.value = true;
-      final messageType = IMessageType.fromCode(chat.chatType);
+      final messageType = MessageType.fromCode(chat.chatType);
       List<IMessage> newMessages = [];
 
-      if (messageType == IMessageType.singleMessage) {
+      if (messageType == MessageType.singleMessage) {
         final messages = await _db.singleMessageDao.getMessagesByPage(
           chat.id,
           chat.ownerId,
@@ -212,7 +248,7 @@ class ChatController extends GetxController {
           _currentPage * pageSize,
         );
         newMessages = messages?.map(IMessage.fromSingleMessage).toList() ?? [];
-      } else if (messageType == IMessageType.groupMessage) {
+      } else if (messageType == MessageType.groupMessage) {
         final messages = await _db.groupMessageDao.getMessagesByPage(
           userId.value,
           pageSize,
@@ -245,48 +281,67 @@ class ChatController extends GetxController {
   }
 
   /// 发送文本消息
+  ///
+  /// [text] 消息内容
   Future<void> sendMessage(String text) async {
-    if (text.isEmpty || currentChat.value == null) return;
+    // 验证消息内容
+    final trimmedText = text.trim();
+    final validationError = Validator.validateMessageLength(trimmedText);
+    if (validationError != null) {
+      _showError(ValidationException(validationError));
+      return;
+    }
+
+    // 检查当前会话
+    if (currentChat.value == null) {
+      _showError(BusinessException('请先选择会话'));
+      return;
+    }
+
     final chat = currentChat.value!;
+
     try {
       final messageTime = DateTime.now().millisecondsSinceEpoch;
-      final messageBody = {'text': text};
+      final messageBody = {'text': trimmedText};
       final params = _buildMessageBody(chat, messageBody, messageTime);
-      final res = chat.chatType == IMessageType.singleMessage.code
+
+      // 根据聊天类型发送消息
+      final res = chat.chatType == MessageType.singleMessage.code
           ? await _apiService.sendSingleMessage(params)
           : await _apiService.sendGroupMessage(params);
 
       await _handleApiResponse(res, onSuccess: (data) async {
-        IMessage parsedMessage = IMessage.fromJson(data);
+        final parsedMessage = IMessage.fromJson(data);
         await handleCreateOrUpdateChat(parsedMessage, chat.toId, true);
+        Get.log('✅ 消息发送成功');
       }, errorMessage: '发送消息失败');
     } catch (e) {
-      _showError('发送消息失败: $e');
+      _showError(e);
     }
   }
 
   /// 构建消息参数
   Map<String, dynamic> _buildMessageBody(
       Chats chat, Map<String, dynamic> messageBody, int messageTime) {
-    if (chat.chatType == IMessageType.singleMessage.code) {
+    if (chat.chatType == MessageType.singleMessage.code) {
       return {
         'fromId': userId.value,
         'toId': chat.id,
         'messageBody': messageBody,
         'messageTempId': Uuid().v4(),
-        'messageContentType': IMessageContentType.text.code,
+        'messageContentType': MessageContentType.text.code,
         'messageTime': messageTime.toString(),
-        'messageType': IMessageType.singleMessage.code,
+        'messageType': MessageType.singleMessage.code,
       };
-    } else if (chat.chatType == IMessageType.groupMessage.code) {
+    } else if (chat.chatType == MessageType.groupMessage.code) {
       return {
         'fromId': userId.value,
         'groupId': chat.id,
         'messageBody': messageBody,
         'messageTempId': Uuid().v4(),
-        'messageContentType': IMessageContentType.text.code,
+        'messageContentType': MessageContentType.text.code,
         'messageTime': messageTime.toString(),
-        'messageType': IMessageType.groupMessage.code,
+        'messageType': MessageType.groupMessage.code,
       };
     }
     throw Exception('不支持的消息类型');
@@ -316,6 +371,10 @@ class ChatController extends GetxController {
       ErrorHandler.handle(AppException('标记消息已读失败', details: e), silent: true);
     }
 
+    if (chat.chatType == MessageType.groupMessage.code) {
+      await fetchGroupMembers(chat.toId);
+    }
+
     await handleSetMessageList(chat);
   }
 
@@ -325,7 +384,7 @@ class ChatController extends GetxController {
       final res = await _apiService.sendCallMessage({
         'fromId': userId.value,
         'toId': friend.friendId,
-        'type': IMessageContentType.rtcCall.code,
+        'type': MessageType.rtcStartVideoCall.code,
       });
 
       return await _handleApiResponse(res, onSuccess: (data) {
@@ -343,9 +402,22 @@ class ChatController extends GetxController {
     }
   }
 
+  /// 加载群成员列表
+  Future<void> fetchGroupMembers(String groupId) async {
+    final res = await _apiService.getGroupMembers({'groupId': groupId});
+    await _handleApiResponse(res, onSuccess: (data) async {
+      if (Objects.isEmpty(data)) return;
+      if (data is Map<String, dynamic>) {
+        final members = data
+            .map((key, value) => MapEntry(key, GroupMember.fromJson(value)));
+        groupMembers[groupId] = members;
+      }
+    }, errorMessage: '获取群成员列表失败');
+  }
+
   /// 处理视频通话消息
   Future<void> handleCallMessage(MessageVideoCallDto dto) async {
-    if (dto.type == IMessageContentType.rtcCall.code) {
+    if (dto.type == MessageType.rtcStartVideoCall.code) {
       final response = await _apiService
           .getFriendInfo({'fromId': userId.value, 'toId': dto.fromId});
 
@@ -359,7 +431,7 @@ class ChatController extends GetxController {
             final res = await _apiService.sendCallMessage({
               'fromId': userId.value,
               'toId': dto.fromId,
-              'type': IMessageContentType.rtcAccept.code,
+              'type': MessageType.rtcAccept.code,
             });
 
             _handleApiResponse(res, onSuccess: (_) {
@@ -373,20 +445,20 @@ class ChatController extends GetxController {
           onReject: () => _apiService.sendCallMessage({
             'fromId': userId.value,
             'toId': dto.fromId,
-            'type': IMessageContentType.rtcReject.code,
+            'type': MessageType.rtcReject.code,
           }),
         );
       }, errorMessage: '获取用户信息失败');
-    } else if (dto.type == IMessageContentType.rtcAccept.code) {
+    } else if (dto.type == MessageType.rtcAccept.code) {
       Get.find<EventBus>()
           .emit('call_accept', {'fromId': dto.fromId, 'toId': userId.value});
-    } else if (dto.type == IMessageContentType.rtcReject.code) {
+    } else if (dto.type == MessageType.rtcReject.code) {
       Get.snackbar('通话提示', '对方已拒绝通话');
       Get.find<EventBus>().emit('call_reject', dto);
-    } else if (dto.type == IMessageContentType.rtcCancel.code) {
+    } else if (dto.type == MessageType.rtcCancel.code) {
       Get.snackbar('通话提示', '对方已取消通话');
       Get.find<EventBus>().emit('call_cancel', dto);
-    } else if (dto.type == IMessageContentType.rtcHangup.code) {
+    } else if (dto.type == MessageType.rtcHangup.code) {
       Get.snackbar('通话提示', '通话已结束');
       Get.find<EventBus>().emit('call_hangup', dto);
     }
@@ -410,9 +482,8 @@ class ChatController extends GetxController {
         // 这里 messages 是 Map<String, dynamic>，但 data 是 dynamic
         if (messages is Map<String, dynamic>) {
           await _processSyncedMessages(
-              messages, IMessageType.singleMessage.code);
-          await _processSyncedMessages(
-              messages, IMessageType.groupMessage.code);
+              messages, MessageType.singleMessage.code);
+          await _processSyncedMessages(messages, MessageType.groupMessage.code);
         }
       }, errorMessage: '同步消息失败');
     } catch (e) {
@@ -444,7 +515,7 @@ class ChatController extends GetxController {
       final batch = parsedMessages.sublist(i, end);
 
       for (final message in batch) {
-        var id = message.messageType == IMessageType.singleMessage.code
+        var id = message.messageType == MessageType.singleMessage.code
             ? (IMessage.toSingleMessage(message, userId.value)).fromId ==
                     userId.value
                 ? message.toId
@@ -495,7 +566,7 @@ class ChatController extends GetxController {
       final res = await _apiService.createChat({
         'fromId': userId.value,
         'toId': friend.friendId,
-        'chatType': IMessageType.singleMessage.code,
+        'chatType': MessageType.singleMessage.code,
       });
 
       return await _handleApiResponse(res, onSuccess: (data) async {
@@ -551,7 +622,7 @@ class ChatController extends GetxController {
   }
 
   /// 打开聊天详情
-  void openChat(Chats chat) {
+  void changeCurrentChat(Chats chat) {
     setCurrentChat(chat);
     Get.toNamed('${Routes.HOME}${Routes.MESSAGE}');
   }

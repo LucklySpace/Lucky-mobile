@@ -3,7 +3,6 @@ import 'package:flutter_im/constants/app_colors.dart';
 import 'package:flutter_im/constants/app_sizes.dart';
 import 'package:get/get.dart';
 
-
 import '../../../controller/chat_controller.dart';
 import '../../../controller/home_controller.dart';
 import '../../widgets/badge/badge.dart';
@@ -65,8 +64,8 @@ class HomePage extends GetView<HomeController> {
           : 0;
       return BottomNavigationBarItem(
         icon: CustomBadge(
-          child:
-              Iconfont.buildIcon(icon: item.icon, size: AppSizes.iconMedium, color: iconColor),
+          child: Iconfont.buildIcon(
+              icon: item.icon, size: AppSizes.iconMedium, color: iconColor),
           count: unreadCount,
           max: 99,
         ),

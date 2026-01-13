@@ -1,26 +1,35 @@
+import 'package:flutter_im/exceptions/app_exception.dart';
 import 'package:flutter_im/utils/objects.dart';
+import 'package:flutter_im/utils/performance.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:get_storage/get_storage.dart';
 
+import '../../constants/app_constant.dart';
 import '../api/api_service.dart';
 import '../core/handlers/error_handler.dart';
 import '../database/app_database.dart';
-import 'package:flutter_im/exceptions/app_exception.dart';
 import '../models/friend.dart';
 import '../models/friend_request.dart';
 
-/// 联系人管理控制器，负责处理好友列表、好友请求及搜索功能
+/// 联系人管理控制器
+///
+/// 功能：
+/// - 好友列表管理（增删改查）
+/// - 好友请求处理（发送、接受、拒绝）
+/// - 好友搜索
+/// - 本地数据同步
 class ContactController extends GetxController {
-  // 依赖注入
+  // ==================== 依赖注入 ====================
+
   final _apiService = Get.find<ApiService>();
   final _db = GetIt.instance<AppDatabase>();
   final _storage = GetStorage();
 
-  // 常量定义
+  // ==================== 常量定义 ====================
+
   static const String _keyUserId = 'userId';
-  static const int _successCode = 200;
-  static const String _defaultErrorMsg = '操作失败';
+  static const int _successCode = AppConstants.businessCodeSuccess;
 
   // 响应式状态
   final RxList<Friend> contactsList = <Friend>[].obs; // 好友列表
@@ -52,17 +61,32 @@ class ContactController extends GetxController {
   }
 
   /// 获取好友列表
+  ///
+  /// 流程：
+  /// 1. 检查用户ID
+  /// 2. 查询本地最大sequence
+  /// 3. 从服务器获取更新
+  /// 4. 批量保存到本地数据库
+  /// 5. 刷新列表
   Future<void> fetchContacts() async {
     try {
       isLoading.value = true;
 
+      // 确保用户ID已加载
       if (userId.isEmpty) {
         getUserId();
       }
 
-      // 先查询本地最大的 sequence
+      if (userId.isEmpty) {
+        throw BusinessException('用户ID未初始化');
+      }
+
+      // 查询本地最大的sequence（用于增量同步）
       final localMaxSequence = await _db.friendDao.getMaxSequence(userId.value);
 
+      Get.log('📥 开始获取好友列表，本地sequence: $localMaxSequence');
+
+      // 从服务器获取好友列表
       final response = await _apiService.getFriendList({
         'userId': userId.value,
         'sequence': localMaxSequence ?? 0,
@@ -73,12 +97,27 @@ class ContactController extends GetxController {
             .map((friend) => Friend.fromJson(friend))
             .toList();
 
-        // 保存好友列表到本地数据库
-        for (var friend in list) {
-          await _db.friendDao.insertOrUpdate(friend);
+        if (list.isEmpty) {
+          Get.log('📭 无新好友数据');
+          return;
         }
 
-        contactsList.value = (await _db.friendDao.list(userId.value))! ?? [];
+        Get.log('📥 收到 ${list.length} 个好友数据');
+
+        // 使用批处理优化数据库插入性能
+        await Performance.batchExecute(
+          list,
+          (friend) async => await _db.friendDao.insertOrUpdate(friend),
+          batchSize: 20,
+        );
+
+        // 从数据库获取最新的好友列表
+        final allFriends = await _db.friendDao.list(userId.value);
+        if (allFriends != null && allFriends.isNotEmpty) {
+          contactsList.value = allFriends;
+        }
+
+        Get.log('✅ 好友列表已更新，共 ${contactsList.length} 人');
       }, errorMessage: '获取好友列表失败');
     } catch (e) {
       _showError('获取好友列表失败: $e');

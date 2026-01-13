@@ -45,7 +45,7 @@ class GroupMessage {
     required this.messageBody,
     required this.messageContentType,
     required this.messageTime,
-    required this.messageType, // IMessageType.GROUP_MESSAGE.code
+    required this.messageType, // MessageType.GROUP_MESSAGE.code
     required this.readStatus,
     required this.sequence,
     this.extra,
@@ -77,7 +77,7 @@ class GroupMessage {
       messageContentType: json['messageContentType'] as int,
       messageTime: json['messageTime'] as int,
       messageType: json['messageType'] as int,
-      // IMessageType.GROUP_MESSAGE.code
+      // MessageType.GROUP_MESSAGE.code
       readStatus: json['readStatus'] as int,
       sequence: json['sequence'] as int,
       extra: json['extra'] as String?,

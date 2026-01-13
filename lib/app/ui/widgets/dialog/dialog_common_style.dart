@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_im/constants/app_colors.dart';
 import 'package:flutter_im/constants/app_sizes.dart';
 import 'package:get/get.dart';
+
 import 'dialog_base.dart';
 
 /// @class : DialogCommonStyle
@@ -73,7 +74,8 @@ class DialogCommonStyle extends StatelessWidget {
                     ),
                   ),
                 if (backVisible && nextVisible)
-                  const VerticalDivider(width: AppSizes.spacing1, color: AppColors.divider),
+                  const VerticalDivider(
+                      width: AppSizes.spacing1, color: AppColors.divider),
                 if (nextVisible)
                   Expanded(
                     child: _buildTextButton(

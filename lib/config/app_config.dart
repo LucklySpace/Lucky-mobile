@@ -1,61 +1,164 @@
+/// 环境类型枚举
+enum Environment {
+  dev, // 开发环境
+  staging, // 测试环境
+  prod // 生产环境
+}
+
+/// 应用配置类 - 统一管理应用级别配置
+///
+/// 支持多环境配置，可在编译时或运行时切换环境
+/// 使用方式: AppConfig.apiServer, AppConfig.isDebug 等
 class AppConfig {
-  // static const String baseUrl = '192.168.31.166';
-  static const String baseUrl = '192.168.31.166';
+  // ==================== 环境配置 ====================
 
-  // API 相关配置192.168.8.43
+  /// 当前环境，可根据实际需求在编译时设置
+  static const Environment _currentEnv = Environment.dev;
+
+  /// 是否为调试模式
+  static const bool isDebug = true;
+
+  /// 根据环境获取服务器地址
+  static String get _baseHost {
+    switch (_currentEnv) {
+      case Environment.dev:
+        return '192.168.31.166'; // 开发环境地址
+      case Environment.staging:
+        return 'staging.example.com'; // 测试环境地址
+      case Environment.prod:
+        return 'api.example.com'; // 生产环境地址
+    }
+  }
+
+  // ==================== API 服务配置 ====================
+
+  /// API 基础路径
   static const String baseApi = '/api';
-  static const String apiServer = 'https://$baseUrl:9190';
-  static const String wsServer = 'wss://$baseUrl:9190/im';
-  static const String meetWsServer = 'wss://$baseUrl:9190/meet';
-  static const String webRtcServer = 'webRTC://$baseUrl/live/';
-  static const String srsServer = 'https://$baseUrl:1980';
 
-  // 应用信息
-  static const String appName = 'IM';
+  /// API 服务器地址
+  static String get apiServer => 'https://$_baseHost:9190';
+
+  /// WebSocket 服务器地址（IM通讯）
+  static String get wsServer => 'wss://$_baseHost:9190/im';
+
+  /// WebSocket 服务器地址（会议）
+  static String get meetWsServer => 'wss://$_baseHost:9190/meet';
+
+  /// WebRTC 服务器地址
+  static String get webRtcServer => 'webRTC://$_baseHost/live/';
+
+  /// SRS 流媒体服务器地址
+  static String get srsServer => 'https://$_baseHost:1980';
+
+  // ==================== 应用信息 ====================
+
+  static const String appName = 'Lucky IM';
   static const String appVersion = '1.0.0';
-  static const String appDescription = '即时通讯';
+  static const String appDescription = '即时通讯应用';
   static const String appIcon = 'assets/logo.png';
-  static const String appCopyright = '© 2023 im. All rights reserved.';
-  static const String deviceType = 'android'; // 修改为移动端
-  static const String protocolType = 'proto';
-  static const String defaultUrl = 'https://luckly-xyz.github.io'; // 默认url
+  static const String appCopyright =
+      '© 2023-2026 Lucky IM. All rights reserved.';
 
-  // 存储相关
+  /// 设备类型标识
+  static const String deviceType = 'mobile';
+
+  /// 协议类型: 'json' 或 'proto'
+  static const String protocolType = 'proto';
+
+  /// 默认网页地址
+  static const String defaultUrl = 'https://luckly-xyz.github.io';
+
+  // ==================== 存储配置 ====================
+
+  /// 本地存储名称
   static const String storeName = 'im_store';
+
+  /// 数据库文件名
   static const String databaseName = 'im_db.db';
+
+  /// 数据库索引文件名
   static const String databaseIndexName = 'im_index.db';
 
-  // 其他配置
-  static const int listRefreshTime = 10000; // 列表刷新时间（毫秒）
-  static const String audioPath = 'assets/audio/'; // 音频文件路径
-  static const String notifi_title = 'Lucky';
-  static const int should_display_time = 5; // 显示时间的间隔（分钟）
+  // ==================== 业务配置 ====================
+
+  /// 列表刷新时间（毫秒）
+  static const int listRefreshTime = 10000;
+
+  /// 音频文件路径前缀
+  static const String audioPath = 'assets/audio/';
+
+  /// 通知标题
+  static const String notificationTitle = 'Lucky';
+
+  /// 消息时间显示间隔（分钟）
+  static const int messageTimeDisplayInterval = 5;
+
+  /// 图片裁剪超时时间（秒）
   static const int cropImageTimeout = 30;
 
-  // 表情文件路径
+  /// 表情包文件路径
   static const String emojiPath = 'assets/data/emoji_pack.json';
+
+  /// 图片选择器路径标识
   static const String pickerPath = 'picker';
 
-  static bool debug = true; // 表情包文件路径
+  // ==================== 网络配置 ====================
 
-// 数据库路径
-// static String getDatabasePath() {
-//   // TODO: 根据平台返回适当的数据库路径
-//   return 'databases/$databaseName';
-// }
+  /// 连接超时时间（秒）
+  static const int connectTimeout = 10;
 
-// // 获取完整的 WebSocket URL
-// static String getWebSocketUrl() {
-//   return wsServer;
-// }
+  /// 接收超时时间（秒）
+  static const int receiveTimeout = 10;
 
-// // 获取完整的 API URL
-// static String getApiUrl(String path) {
-//   return '$apiServer$baseApi$path';
-// }
+  /// 发送超时时间（秒）
+  static const int sendTimeout = 10;
 
-// // 获取音频文件完整路径
-// static String getAudioPath(String fileName) {
-//   return '$audioPath$fileName';
-// }
+  /// WebSocket 心跳间隔（毫秒）
+  static const int heartbeatInterval = 20000;
+
+  /// WebSocket 最大重连次数
+  static const int maxReconnectAttempts = 10;
+
+  /// WebSocket 重连基础延迟（秒）
+  static const int reconnectBaseDelay = 2;
+
+  // ==================== 分页配置 ====================
+
+  /// 默认分页大小
+  static const int defaultPageSize = 20;
+
+  /// 消息列表分页大小
+  static const int messagePageSize = 20;
+
+  // ==================== 工具方法 ====================
+
+  /// 获取完整的 API URL
+  static String getApiUrl(String path) {
+    return '$apiServer$baseApi$path';
+  }
+
+  /// 获取音频文件完整路径
+  static String getAudioPath(String fileName) {
+    return '$audioPath$fileName';
+  }
+
+  /// 获取当前环境名称
+  static String getEnvironmentName() {
+    return _currentEnv.name.toUpperCase();
+  }
+
+  /// 打印当前配置信息（仅用于调试）
+  static void printConfig() {
+    if (!isDebug) return;
+
+    print('╔════════════════════════════════════════╗');
+    print('║      Lucky IM Configuration Info      ║');
+    print('╠════════════════════════════════════════╣');
+    print('║ Environment: ${getEnvironmentName().padRight(27)}║');
+    print('║ Debug Mode:  ${isDebug.toString().padRight(27)}║');
+    print('║ API Server:  ${apiServer.padRight(27)}║');
+    print('║ WS Server:   ${wsServer.padRight(27)}║');
+    print('║ Version:     ${appVersion.padRight(27)}║');
+    print('╚════════════════════════════════════════╝');
+  }
 }

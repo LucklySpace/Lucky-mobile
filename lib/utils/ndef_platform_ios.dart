@@ -4,7 +4,6 @@ import 'package:nfc_manager/nfc_manager_ios.dart';
 
 import 'Ndef.dart';
 
-
 final class NdefPlatformIos implements Ndef {
   const NdefPlatformIos._(this._tech);
 

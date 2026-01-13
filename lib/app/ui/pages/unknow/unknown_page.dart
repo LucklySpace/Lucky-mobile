@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 
@@ -18,7 +17,8 @@ class UnknownView extends GetView {
   static const _messageStyle = TextStyle(fontSize: AppSizes.font18); // 提示文本样式
   static const _spacing = AppSizes.spacing16; // 垂直间距
   static const _buttonSpacing = AppSizes.spacing24; // 按钮区域间距
-  static const _buttonTextStyle = TextStyle(fontSize: AppSizes.font16); // 按钮文本样式
+  static const _buttonTextStyle =
+      TextStyle(fontSize: AppSizes.font16); // 按钮文本样式
 
   const UnknownView({super.key});
 

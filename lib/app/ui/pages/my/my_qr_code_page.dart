@@ -21,12 +21,14 @@ class MyQRCodePage extends StatelessWidget {
   static const _avatarSize = AppSizes.spacing50; // 头像尺寸
   static const _avatarBorderRadius = AppSizes.radius6; // 头像圆角
   static const _avatarPlaceholderColor = AppColors.textHint; // 头像占位颜色
-  static const _usernameStyle =
-      TextStyle(fontSize: AppSizes.font16, fontWeight: FontWeight.w500, color: AppColors.textPrimary); // 用户名样式
+  static const _usernameStyle = TextStyle(
+      fontSize: AppSizes.font16,
+      fontWeight: FontWeight.w500,
+      color: AppColors.textPrimary); // 用户名样式
   static const _hintStyle =
       TextStyle(fontSize: AppSizes.font14, color: AppColors.textHint); // 提示文本样式
-  static const _padding =
-      EdgeInsets.symmetric(horizontal: AppSizes.spacing40, vertical: AppSizes.spacing32); // 页面边距
+  static const _padding = EdgeInsets.symmetric(
+      horizontal: AppSizes.spacing40, vertical: AppSizes.spacing32); // 页面边距
   static const _spacing = AppSizes.spacing32; // 垂直间距
   static const _defaultUsername = '未登录'; // 默认用户名
   static const _defaultUserId = ''; // 默认用户 ID
@@ -46,7 +48,8 @@ class MyQRCodePage extends StatelessWidget {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              color: AppColors.textPrimary),
           onPressed: Get.back,
         ),
         titleTextStyle: const TextStyle(
@@ -145,7 +148,7 @@ class MyQRCodePage extends StatelessWidget {
     final userId = userInfo['userId']?.toString() ?? _defaultUserId;
     final avatarUrl = userInfo['avatar'] as String? ?? _defaultAvatar;
     final qrData =
-        Uri.encodeComponent('${AppConstants.FRIEND_PROFILE_PREFIX}$userId');
+        Uri.encodeComponent('${AppConstants.friendProfilePrefix}$userId');
 
     return Center(
       child: Container(
@@ -163,14 +166,16 @@ class MyQRCodePage extends StatelessWidget {
           embeddedImage: avatarUrl.isNotEmpty
               ? CachedNetworkImageProvider(avatarUrl)
               : null,
-          embeddedImageStyle: const QrEmbeddedImageStyle(size: Size(AppSizes.spacing36, AppSizes.spacing36)),
+          embeddedImageStyle: const QrEmbeddedImageStyle(
+              size: Size(AppSizes.spacing36, AppSizes.spacing36)),
           errorCorrectionLevel: QrErrorCorrectLevel.M,
           errorStateBuilder: (context, error) {
             debugPrint('二维码生成失败: $error');
             return const Center(
               child: Text(
                 '二维码生成失败',
-                style: TextStyle(color: AppColors.error, fontSize: AppSizes.font14),
+                style: TextStyle(
+                    color: AppColors.error, fontSize: AppSizes.font14),
               ),
             );
           },

@@ -64,7 +64,7 @@ class _ReceiveBodyState extends State<ReceiveBody> {
   @override
   Widget build(BuildContext context) {
     // 构建二维码数据
-    String qrData = '${AppConstants.WALLET_ADDRESS_PREFIX}${widget.address}';
+    String qrData = '${AppConstants.walletAddressPrefix}${widget.address}';
     if (_amount != null && _amount!.isNotEmpty) {
       qrData += '&amount=$_amount';
     }
@@ -75,7 +75,8 @@ class _ReceiveBodyState extends State<ReceiveBody> {
           children: [
             const SizedBox(height: AppSizes.spacing30),
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: AppSizes.spacing24),
+              margin:
+                  const EdgeInsets.symmetric(horizontal: AppSizes.spacing24),
               padding: const EdgeInsets.all(AppSizes.spacing24),
               decoration: BoxDecoration(
                 color: AppColors.surface,
@@ -103,8 +104,8 @@ class _ReceiveBodyState extends State<ReceiveBody> {
                     data: qrData,
                     version: QrVersions.auto,
                     size: AppSizes.spacing200 + AppSizes.spacing20,
-                    embeddedImageStyle:
-                        const QrEmbeddedImageStyle(size: Size(AppSizes.spacing40, AppSizes.spacing40)),
+                    embeddedImageStyle: const QrEmbeddedImageStyle(
+                        size: Size(AppSizes.spacing40, AppSizes.spacing40)),
                     errorCorrectionLevel: QrErrorCorrectLevel.M,
                     // TODO: 可以添加 logo
                   ),
@@ -118,12 +119,14 @@ class _ReceiveBodyState extends State<ReceiveBody> {
                               const TextSpan(
                                 text: '收款金额: ',
                                 style: TextStyle(
-                                    fontSize: AppSizes.font20, fontWeight: FontWeight.bold),
+                                    fontSize: AppSizes.font20,
+                                    fontWeight: FontWeight.bold),
                               ),
                               TextSpan(
                                 text: _amount,
                                 style: const TextStyle(
-                                    fontSize: AppSizes.font32, fontWeight: FontWeight.bold),
+                                    fontSize: AppSizes.font32,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -132,8 +135,9 @@ class _ReceiveBodyState extends State<ReceiveBody> {
                       ],
                     ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSizes.spacing12, vertical: AppSizes.spacing8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.spacing12,
+                        vertical: AppSizes.spacing8),
                     decoration: BoxDecoration(
                       color: AppColors.background,
                       borderRadius: BorderRadius.circular(AppSizes.radius8),
@@ -164,7 +168,8 @@ class _ReceiveBodyState extends State<ReceiveBody> {
                             ));
                           },
                           child: const Icon(Icons.copy,
-                              size: AppSizes.iconSmall, color: AppColors.primary),
+                              size: AppSizes.iconSmall,
+                              color: AppColors.primary),
                         ),
                       ],
                     ),
@@ -239,7 +244,8 @@ class _ReceiveBodyState extends State<ReceiveBody> {
           const SizedBox(height: AppSizes.spacing8),
           Text(
             label,
-            style: const TextStyle(fontSize: AppSizes.font14, color: AppColors.textPrimary),
+            style: const TextStyle(
+                fontSize: AppSizes.font14, color: AppColors.textPrimary),
           ),
         ],
       ),

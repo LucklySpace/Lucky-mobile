@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_im/constants/app_colors.dart';
 import 'package:get/get.dart';
@@ -24,8 +23,8 @@ class UserProfilePage extends GetView<UserController> {
     final birthdayController = TextEditingController();
     final locationController = TextEditingController();
     final signatureController = TextEditingController();
-    
-    final gender = RxInt(-1); 
+
+    final gender = RxInt(-1);
     final avatarUrl = RxString("");
 
     return WillPopScope(
@@ -61,9 +60,9 @@ class UserProfilePage extends GetView<UserController> {
                 const SizedBox(height: 24),
                 // 头像区域
                 _buildAvatarSection(context, avatarUrl.value, isEditing),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // 基本信息卡片
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -82,26 +81,34 @@ class UserProfilePage extends GetView<UserController> {
                     children: [
                       _buildListTile(
                         label: '用户名',
-                        content: _buildTextField(usernameController, isEditing, hint: '设置用户名'),
+                        content: _buildTextField(usernameController, isEditing,
+                            hint: '设置用户名'),
                       ),
                       _buildDivider(),
                       _buildListTile(
                         label: '性别',
-                        content: isEditing 
-                          ? _buildGenderSelector(gender) 
-                          : Text(_getGenderText(gender.value), style: _contentStyle),
+                        content: isEditing
+                            ? _buildGenderSelector(gender)
+                            : Text(_getGenderText(gender.value),
+                                style: _contentStyle),
                       ),
                       _buildDivider(),
                       _buildListTile(
                         label: '生日',
                         content: isEditing
-                          ? _buildClickableField(birthdayController, '选择日期', () => _selectBirthDate(birthdayController))
-                          : Text(birthdayController.text.isEmpty ? '未设置' : birthdayController.text, style: _contentStyle),
+                            ? _buildClickableField(birthdayController, '选择日期',
+                                () => _selectBirthDate(birthdayController))
+                            : Text(
+                                birthdayController.text.isEmpty
+                                    ? '未设置'
+                                    : birthdayController.text,
+                                style: _contentStyle),
                       ),
                       _buildDivider(),
                       _buildListTile(
                         label: '地区',
-                        content: _buildTextField(locationController, isEditing, hint: '添加地区'),
+                        content: _buildTextField(locationController, isEditing,
+                            hint: '添加地区'),
                       ),
                     ],
                   ),
@@ -127,39 +134,42 @@ class UserProfilePage extends GetView<UserController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('个性签名', style: TextStyle(
-                        fontSize: 15, 
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary
-                      )),
-                      const SizedBox(height: 12),
-                      isEditing 
-                        ? TextField(
-                            controller: signatureController,
-                            maxLines: 4,
-                            maxLength: 50,
-                            style: const TextStyle(fontSize: 15, height: 1.5),
-                            decoration: InputDecoration(
-                              hintText: '写点什么...',
-                              hintStyle: TextStyle(color: Colors.grey[400]),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFF9FAFB),
-                              contentPadding: const EdgeInsets.all(12),
-                              counterText: "",
-                            ),
-                          )
-                        : Text(
-                            signatureController.text.isEmpty ? '暂无签名' : signatureController.text,
-                            style: TextStyle(
+                      const Text('个性签名',
+                          style: TextStyle(
                               fontSize: 15,
-                              height: 1.5,
-                              color: signatureController.text.isEmpty ? Colors.grey : const Color(0xFF4A4A4A)
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary)),
+                      const SizedBox(height: 12),
+                      isEditing
+                          ? TextField(
+                              controller: signatureController,
+                              maxLines: 4,
+                              maxLength: 50,
+                              style: const TextStyle(fontSize: 15, height: 1.5),
+                              decoration: InputDecoration(
+                                hintText: '写点什么...',
+                                hintStyle: TextStyle(color: Colors.grey[400]),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFFF9FAFB),
+                                contentPadding: const EdgeInsets.all(12),
+                                counterText: "",
+                              ),
+                            )
+                          : Text(
+                              signatureController.text.isEmpty
+                                  ? '暂无签名'
+                                  : signatureController.text,
+                              style: TextStyle(
+                                  fontSize: 15,
+                                  height: 1.5,
+                                  color: signatureController.text.isEmpty
+                                      ? Colors.grey
+                                      : const Color(0xFF4A4A4A)),
                             ),
-                          ),
                     ],
                   ),
                 ),
@@ -173,13 +183,12 @@ class UserProfilePage extends GetView<UserController> {
                       height: 50,
                       child: ElevatedButton(
                         onPressed: () => _handleSave(
-                          usernameController, 
-                          birthdayController, 
-                          locationController, 
-                          signatureController, 
-                          gender, 
-                          avatarUrl
-                        ),
+                            usernameController,
+                            birthdayController,
+                            locationController,
+                            signatureController,
+                            gender,
+                            avatarUrl),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           elevation: 2,
@@ -188,11 +197,11 @@ class UserProfilePage extends GetView<UserController> {
                             borderRadius: BorderRadius.circular(25),
                           ),
                         ),
-                        child: const Text('保存修改', style: TextStyle(
-                          fontSize: 16, 
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white
-                        )),
+                        child: const Text('保存修改',
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
                       ),
                     ),
                   ),
@@ -204,18 +213,13 @@ class UserProfilePage extends GetView<UserController> {
       }),
     );
   }
-  
+
   // --- 样式定义 ---
   final TextStyle _labelStyle = const TextStyle(
-    fontSize: 16, 
-    fontWeight: FontWeight.w500, 
-    color: AppColors.textPrimary
-  );
-  
-  final TextStyle _contentStyle = const TextStyle(
-    fontSize: 16, 
-    color: Color(0xFF4A4A4A)
-  );
+      fontSize: 16, fontWeight: FontWeight.w500, color: AppColors.textPrimary);
+
+  final TextStyle _contentStyle =
+      const TextStyle(fontSize: 16, color: Color(0xFF4A4A4A));
 
   // --- 组件构建 ---
 
@@ -238,7 +242,8 @@ class UserProfilePage extends GetView<UserController> {
           },
           style: TextButton.styleFrom(
             foregroundColor: AppColors.primary,
-            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            textStyle:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           ),
           child: Text(isEditing ? '取消' : '编辑'),
         ),
@@ -274,14 +279,17 @@ class UserProfilePage extends GetView<UserController> {
                         imageUrl: url,
                         fit: BoxFit.cover,
                         placeholder: (context, url) => const Center(
-                          child: Icon(Icons.person, size: 40, color: Color(0xFFE0E0E0)),
+                          child: Icon(Icons.person,
+                              size: 40, color: Color(0xFFE0E0E0)),
                         ),
                         errorWidget: (context, url, error) => const Center(
-                          child: Icon(Icons.person, size: 40, color: Color(0xFFE0E0E0)),
+                          child: Icon(Icons.person,
+                              size: 40, color: Color(0xFFE0E0E0)),
                         ),
                       )
                     : const Center(
-                        child: Icon(Icons.person, size: 50, color: Color(0xFFE0E0E0)),
+                        child: Icon(Icons.person,
+                            size: 50, color: Color(0xFFE0E0E0)),
                       ),
               ),
             ),
@@ -295,18 +303,18 @@ class UserProfilePage extends GetView<UserController> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      )
-                    ]
-                  ),
-                  child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        )
+                      ]),
+                  child: const Icon(Icons.camera_alt,
+                      size: 16, color: Colors.white),
                 ),
               ),
             ),
@@ -335,15 +343,16 @@ class UserProfilePage extends GetView<UserController> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, bool isEditing, {String? hint}) {
+  Widget _buildTextField(TextEditingController controller, bool isEditing,
+      {String? hint}) {
     if (!isEditing) {
       return Text(
-        controller.text.isEmpty ? '未设置' : controller.text, 
+        controller.text.isEmpty ? '未设置' : controller.text,
         style: _contentStyle,
         overflow: TextOverflow.ellipsis,
       );
     }
-    
+
     return TextField(
       controller: controller,
       textAlign: TextAlign.right,
@@ -358,7 +367,8 @@ class UserProfilePage extends GetView<UserController> {
     );
   }
 
-  Widget _buildClickableField(TextEditingController controller, String hint, VoidCallback onTap) {
+  Widget _buildClickableField(
+      TextEditingController controller, String hint, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Row(
@@ -367,9 +377,10 @@ class UserProfilePage extends GetView<UserController> {
           Text(
             controller.text.isEmpty ? hint : controller.text,
             style: TextStyle(
-              fontSize: 16,
-              color: controller.text.isEmpty ? Colors.grey[400] : const Color(0xFF4A4A4A)
-            ),
+                fontSize: 16,
+                color: controller.text.isEmpty
+                    ? Colors.grey[400]
+                    : const Color(0xFF4A4A4A)),
           ),
           const SizedBox(width: 4),
           Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
@@ -380,13 +391,13 @@ class UserProfilePage extends GetView<UserController> {
 
   Widget _buildGenderSelector(RxInt gender) {
     return Obx(() => Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildGenderChip('男', 1, gender),
-        const SizedBox(width: 12),
-        _buildGenderChip('女', 0, gender),
-      ],
-    ));
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildGenderChip('男', 1, gender),
+            const SizedBox(width: 12),
+            _buildGenderChip('女', 0, gender),
+          ],
+        ));
   }
 
   Widget _buildGenderChip(String label, int value, RxInt groupValue) {
@@ -412,7 +423,12 @@ class UserProfilePage extends GetView<UserController> {
   }
 
   Widget _buildDivider() {
-    return const Divider(height: 1, thickness: 0.5, indent: 20, endIndent: 20, color: Color(0xFFEEEEEE));
+    return const Divider(
+        height: 1,
+        thickness: 0.5,
+        indent: 20,
+        endIndent: 20,
+        color: Color(0xFFEEEEEE));
   }
 
   // --- 逻辑处理 ---
@@ -432,19 +448,20 @@ class UserProfilePage extends GetView<UserController> {
     }
 
     // 更新头像URL（如果已更改）
-    if (avatarUrl.isNotEmpty && controller.userInfo['avatar'] != avatarUrl.value) {
+    if (avatarUrl.isNotEmpty &&
+        controller.userInfo['avatar'] != avatarUrl.value) {
       avatarUrl.value = controller.userInfo['avatar'];
     }
 
     final user = User(
-      userId: controller.userId.value,
-      name: usernameController.text.trim(),
-      avatar: avatarUrl.value,
-      birthday: birthdayController.text,
-      location: locationController.text.trim(),
-      gender: gender.value == -1 ? 1 : gender.value, // 默认为男
-      selfSignature: signatureController.text.trim()
-    );
+        userId: controller.userId.value,
+        name: usernameController.text.trim(),
+        avatar: avatarUrl.value,
+        birthday: birthdayController.text,
+        location: locationController.text.trim(),
+        gender: gender.value == -1 ? 1 : gender.value,
+        // 默认为男
+        selfSignature: signatureController.text.trim());
 
     await controller.updateUserInfo(user);
     controller.isEditing.value = false;
@@ -473,9 +490,12 @@ class UserProfilePage extends GetView<UserController> {
 
   String _getGenderText(int? gender) {
     switch (gender) {
-      case 0: return '女';
-      case 1: return '男';
-      default: return '未设置';
+      case 0:
+        return '女';
+      case 1:
+        return '男';
+      default:
+        return '未设置';
     }
   }
 
@@ -494,15 +514,22 @@ class UserProfilePage extends GetView<UserController> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 8),
-                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+                Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2))),
                 const SizedBox(height: 20),
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.blue[50], shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                        color: Colors.blue[50], shape: BoxShape.circle),
                     child: const Icon(Icons.camera_alt, color: Colors.blue),
                   ),
-                  title: const Text('拍摄照片', style: TextStyle(fontWeight: FontWeight.w500)),
+                  title: const Text('拍摄照片',
+                      style: TextStyle(fontWeight: FontWeight.w500)),
                   onTap: () {
                     Navigator.pop(context);
                     getImage();
@@ -511,10 +538,13 @@ class UserProfilePage extends GetView<UserController> {
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.purple[50], shape: BoxShape.circle),
-                    child: const Icon(Icons.photo_library, color: Colors.purple),
+                    decoration: BoxDecoration(
+                        color: Colors.purple[50], shape: BoxShape.circle),
+                    child:
+                        const Icon(Icons.photo_library, color: Colors.purple),
                   ),
-                  title: const Text('从相册选取', style: TextStyle(fontWeight: FontWeight.w500)),
+                  title: const Text('从相册选取',
+                      style: TextStyle(fontWeight: FontWeight.w500)),
                   onTap: () {
                     Navigator.pop(context);
                     chooseImage();
@@ -539,7 +569,8 @@ class UserProfilePage extends GetView<UserController> {
 
   Future chooseImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final XFile? image =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (image != null) {
       cropImage(File(image.path));
     }
@@ -547,7 +578,8 @@ class UserProfilePage extends GetView<UserController> {
 
   void cropImage(File originalImage) async {
     try {
-      final File? cropped = await CropperImage.crop(originalImage, AppConfig.cropImageTimeout);
+      final File? cropped =
+          await CropperImage.crop(originalImage, AppConfig.cropImageTimeout);
       if (cropped != null) {
         final String? imageUrl = await controller.uploadImage(cropped);
         if (imageUrl != null) {
@@ -566,7 +598,8 @@ class UserProfilePage extends GetView<UserController> {
       try {
         List<String> parts = controller.text.split('-');
         if (parts.length == 3) {
-          initialDate = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+          initialDate = DateTime(
+              int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
         } else {
           initialDate = DateTime.now();
         }
@@ -596,7 +629,8 @@ class UserProfilePage extends GetView<UserController> {
     );
 
     if (picked != null) {
-      controller.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      controller.text =
+          "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
     }
   }
 }

@@ -9,7 +9,6 @@ import 'package:get/get.dart';
 import '../../config/app_config.dart';
 import '../controller/user_controller.dart';
 
-
 /// HTTP 请求服务类，基于 Dio 封装，提供统一的网络请求功能
 class HttpService extends GetxService {
   late final dio.Dio _dio;
@@ -26,13 +25,14 @@ class HttpService extends GetxService {
   void _initDio() {
     _dio = dio.Dio(dio.BaseOptions(
       baseUrl: AppConfig.apiServer,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-      sendTimeout: const Duration(seconds: 10),
+      connectTimeout: Duration(seconds: AppConfig.connectTimeout),
+      receiveTimeout: Duration(seconds: AppConfig.receiveTimeout),
+      sendTimeout: Duration(seconds: AppConfig.sendTimeout),
     ));
 
     // 仅在调试模式下启用忽略 SSL 证书验证（用于抓包调试）
-    if (AppConfig.debug) {
+    // ⚠️ 生产环境必须关闭此功能！
+    if (AppConfig.isDebug) {
       (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
         final client = HttpClient();
         client.badCertificateCallback =

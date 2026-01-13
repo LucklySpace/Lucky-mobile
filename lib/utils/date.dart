@@ -88,7 +88,7 @@ class DateUtil {
   /// [prevTime] 上一条消息的时间，如果为 null 则返回 true
   /// [showTime] 显示时间的间隔（分钟），默认为 5 分钟
   static bool shouldDisplayTime(dynamic currentTime, dynamic prevTime,
-      {int showTime = AppConfig.should_display_time}) {
+      {int showTime = AppConfig.messageTimeDisplayInterval}) {
     // 如果 prevTime 为 null，则返回 true
     if (prevTime == null) return true;
 

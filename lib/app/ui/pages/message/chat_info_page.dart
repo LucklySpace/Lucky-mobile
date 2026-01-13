@@ -3,7 +3,6 @@ import 'package:flutter_im/constants/app_colors.dart';
 import 'package:flutter_im/constants/app_sizes.dart';
 import 'package:get/get.dart';
 
-
 class ChatInfoPage extends StatelessWidget {
   const ChatInfoPage({super.key});
 
@@ -28,7 +27,8 @@ class ChatInfoPage extends StatelessWidget {
         backgroundColor: AppColors.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              color: AppColors.textPrimary),
           onPressed: () => Get.back(),
         ),
       ),
@@ -53,7 +53,8 @@ class ChatInfoPage extends StatelessWidget {
                       height: 50,
                       child: avatarUrl.isNotEmpty
                           ? Image.network(avatarUrl, fit: BoxFit.cover)
-                          : const Icon(Icons.person, size: 50, color: AppColors.textHint),
+                          : const Icon(Icons.person,
+                              size: 50, color: AppColors.textHint),
                     ),
                   ),
                   const SizedBox(width: AppSizes.spacing16),
@@ -71,7 +72,8 @@ class ChatInfoPage extends StatelessWidget {
             const SizedBox(height: AppSizes.spacing20),
             // 聊天记录
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16, vertical: AppSizes.spacing12),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.spacing16, vertical: AppSizes.spacing12),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppSizes.radius8),
@@ -87,11 +89,12 @@ class ChatInfoPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AppSizes.spacing10),
-                   _buildSettingItem('查找聊天记录', onTap: () {
-                     // TODO: Implement search chat history
-                     Get.snackbar('提示', '功能开发中');
-                   }),
-                  const Divider(height: AppSizes.spacing1, color: AppColors.divider),
+                  _buildSettingItem('查找聊天记录', onTap: () {
+                    // TODO: Implement search chat history
+                    Get.snackbar('提示', '功能开发中');
+                  }),
+                  const Divider(
+                      height: AppSizes.spacing1, color: AppColors.divider),
                   // 消息免打扰
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
@@ -102,7 +105,8 @@ class ChatInfoPage extends StatelessWidget {
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    value: false, // 这里可以根据实际状态设置
+                    value: false,
+                    // 这里可以根据实际状态设置
                     activeColor: AppColors.primary,
                     onChanged: (value) {
                       // 处理免打扰逻辑
@@ -133,7 +137,8 @@ class ChatInfoPage extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textHint),
+            const Icon(Icons.arrow_forward_ios,
+                size: 16, color: AppColors.textHint),
           ],
         ),
       ),

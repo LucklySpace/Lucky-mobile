@@ -102,8 +102,8 @@ class WalletResultPage extends StatelessWidget {
                       _buildDetailRow('接收方:', toAddress, copyable: true),
                     if (toAddress != null && transactionId != null)
                       const SizedBox(height: AppSizes.spacing16),
-                      const Divider(height: AppSizes.spacing24),
-                      const SizedBox(height: AppSizes.spacing16),
+                    const Divider(height: AppSizes.spacing24),
+                    const SizedBox(height: AppSizes.spacing16),
                     if (transactionId != null)
                       _buildDetailRow('交易ID:', transactionId, copyable: true),
                   ],
