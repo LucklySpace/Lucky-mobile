@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_im/app/models/user.dart';
 import 'package:get/get.dart';
 
 import '../../../../constants/app_colors.dart';
@@ -47,7 +48,13 @@ class MessagePage extends GetView<ChatController> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  MessagePage({super.key});
+  MessagePage({super.key}) {
+    // 初始化时设置草稿
+    final draft = controller.currentChat.value?.draft;
+    if (draft != null && draft.isNotEmpty) {
+      _textController.text = draft;
+    }
+  }
 
   @override
   void dispose() {
@@ -58,20 +65,26 @@ class MessagePage extends GetView<ChatController> {
 
   @override
   Widget build(BuildContext context) {
-    final userInfo = Get.find<UserController>().userInfo;
+    User userInfo = Get.find<UserController>().userInfo.value as User;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(userInfo),
+      resizeToAvoidBottomInset: true, // 确保键盘弹出时正确调整布局
       body: Column(
         children: [
           /// 消息列表
+          /// 顶部不需要 SafeArea，因为 AppBar 已经处理了状态栏
           Expanded(child: _buildMessageList(userInfo)),
 
           /// 输入框
-          MessageInput(
-            textController: _textController,
-            controller: controller,
+          /// 使用 SafeArea 确保在有底部手势条的设备上，输入框不会被遮挡
+          SafeArea(
+            top: false,
+            child: MessageInput(
+              textController: _textController,
+              controller: controller,
+            ),
           ),
         ],
       ),
@@ -81,7 +94,7 @@ class MessagePage extends GetView<ChatController> {
   // --- UI 构建方法 ---
 
   /// 构建 AppBar
-  PreferredSizeWidget _buildAppBar(Map<dynamic, dynamic> userInfo) {
+  PreferredSizeWidget _buildAppBar(User userInfo) {
     return AppBar(
       elevation: 0,
       centerTitle: true,
@@ -114,7 +127,7 @@ class MessagePage extends GetView<ChatController> {
   }
 
   /// 构建消息列表
-  Widget _buildMessageList(Map<dynamic, dynamic> userInfo) {
+  Widget _buildMessageList(User userInfo) {
     return Obx(() => NotificationListener<ScrollNotification>(
           onNotification: (scrollInfo) {
             if (scrollInfo.metrics.pixels ==
@@ -167,31 +180,46 @@ class MessagePage extends GetView<ChatController> {
   }
 
   /// 构建消息项（包括时间标签和气泡）
-  Widget _buildMessageItem(int index, Map<dynamic, dynamic> userInfo) {
+  Widget _buildMessageItem(int index, User userInfo) {
     final message = controller.messageList[index];
-    final isMe = message.fromId == controller.userId.value;
     final chat = controller.currentChat.value;
+    final myId = controller.userId.value;
 
-    var name = "";
-    var avatar = "";
+    // 严谨判断是否为“我”发送
+    final isMe = message.fromId != null &&
+        myId.isNotEmpty &&
+        message.fromId.toString() == myId;
 
-    if (chat?.chatType == MessageType.singleMessage.code) {
-      name =
-          isMe ? userInfo['name'] ?? _defaultName : chat?.name ?? _defaultName;
-      avatar = isMe
-          ? userInfo['avatar'] ?? _defaultAvatar
-          : chat?.avatar ?? _defaultAvatar;
-    }
+    // 默认值：防止出现完全空白
+    String? name = _defaultName;
+    String? avatar = _defaultAvatar;
 
-    if (chat?.chatType == MessageType.groupMessage.code) {
-      final groupMembers = controller.groupMembers[chat?.toId ?? ''];
-      final member = groupMembers?[message.fromId ?? ''];
-      name = isMe
-          ? userInfo['name'] ?? _defaultName
-          : member?.name ?? _defaultName;
-      avatar = isMe
-          ? userInfo['avatar'] ?? _defaultAvatar
-          : member?.avatar ?? _defaultAvatar;
+    // 根据聊天类型解析名称和头像
+    if (chat != null) {
+      if (chat.chatType == MessageType.singleMessage.code) {
+        // 私聊：我显示自己的，对方显示会话信息
+        if (isMe) {
+          name = userInfo.name ?? _defaultName;
+          avatar = userInfo.avatar ?? _defaultAvatar;
+        } else {
+          name = chat.name;
+          avatar = chat.avatar;
+        }
+      } else if (chat.chatType == MessageType.groupMessage.code) {
+        // 群聊：从群成员缓存中获取
+        if (isMe) {
+          name = userInfo.name ?? _defaultName;
+          avatar = userInfo.avatar ?? _defaultAvatar;
+        } else {
+          // 局部监听群成员变化
+          final groupMembers = controller.group.groupMembers[chat.toId];
+          final member = groupMembers?[message.fromId];
+          if (member != null) {
+            name = member.name;
+            avatar = member.avatar;
+          }
+        }
+      }
     }
 
     // 计算是否显示时间（与上一条消息时间差小于 5 分钟不显示）
@@ -203,17 +231,16 @@ class MessagePage extends GetView<ChatController> {
     final bubble = _messageBubbleMap[contentType]?.call(
           message: message,
           isMe: isMe,
-          name: name,
-          avatar: avatar,
+          name: name ?? "",
+          avatar: avatar ?? "",
         ) ??
         _buildTextBubble(
           message: message,
           isMe: isMe,
-          name: name,
-          avatar: avatar,
+          name: name ?? "",
+          avatar: avatar ?? "",
         );
 
-    // 如果需要显示时间，添加时间标签
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

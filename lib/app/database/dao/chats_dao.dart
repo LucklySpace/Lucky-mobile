@@ -16,6 +16,14 @@ abstract class ChatsDao {
       'SELECT * FROM Chats WHERE (ownerId = :ownerId and toId = :toId) or (ownerId = :toId and toId = :ownerId)')
   Future<List<Chats>?> getChatByOwnerIdAndToId(String ownerId, String toId);
 
+  @Query('''
+    SELECT * FROM Chats 
+    WHERE ownerId = :ownerId 
+    AND chatType = 1001
+    AND name LIKE '%' || :keyword || '%'
+  ''')
+  Future<List<Chats>> searchGroupChats(String ownerId, String keyword);
+
   @insert
   Future<void> insertChat(Chats chat);
 

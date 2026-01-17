@@ -194,7 +194,7 @@ typedef IMessageReadStatus = MessageStatus;
 
 // ==================== 消息发送状态枚举 ====================
 
-/// 消息发送状态枚举
+/// 消息状态枚举
 enum MessageSendCode {
   success(0, '成功'),
   failed(1, '失败'),

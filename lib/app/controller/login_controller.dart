@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_im/exceptions/app_exception.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 
 import '../../routes/app_routes.dart';
 import '../../utils/validator.dart';
+import '../core/base/base_controller.dart';
 import '../core/handlers/error_handler.dart';
 import 'user_controller.dart';
 
@@ -26,7 +26,7 @@ enum AuthType {
 /// - 凭证安全存储
 /// - 验证码倒计时
 /// - 输入验证
-class LoginController extends GetxController
+class LoginController extends BaseController
     with GetSingleTickerProviderStateMixin {
   // ==================== 常量定义 ====================
 
@@ -44,15 +44,15 @@ class LoginController extends GetxController
       TextEditingController(); // 用户名或手机号
   final TextEditingController credentialsController =
       TextEditingController(); // 密码或验证码
-  final RxBool isLoading = false.obs; // 登录加载状态
   final RxBool rememberCredentials = false.obs; // 是否记住密码
   final RxBool canSendCode = true.obs; // 是否可发送验证码
   final RxInt countDown = _countdownSeconds.obs; // 验证码倒计时
+  final RxInt activeTabIndex = 0.obs; // 当前激活的 Tab 索引
   Timer? countdownTimer; // 验证码倒计时定时器
 
   /// 当前登录类型
   AuthType get currentAuthType =>
-      tabController.index == 0 ? AuthType.password : AuthType.verifyCode;
+      activeTabIndex.value == 0 ? AuthType.password : AuthType.verifyCode;
 
   @override
   void onInit() {
@@ -103,7 +103,7 @@ class LoginController extends GetxController
         await _navigateToHome();
       }
     } catch (e) {
-      _showError(e);
+      showError(e);
     } finally {
       isLoading.value = false;
     }
@@ -115,14 +115,14 @@ class LoginController extends GetxController
   Future<void> sendVerificationCode() async {
     // 检查是否可以发送
     if (!canSendCode.value) {
-      _showError(BusinessException('请等待倒计时结束'));
+      showError('请等待倒计时结束');
       return;
     }
 
     // 验证手机号
     final phoneError = Validator.validatePhone(principalController.text);
     if (phoneError != null) {
-      _showError(ValidationException(phoneError));
+      showError(phoneError);
       return;
     }
 
@@ -131,7 +131,7 @@ class LoginController extends GetxController
       ErrorHandler.showSuccess('验证码已发送');
       _startCountdown();
     } catch (e) {
-      _showError(e);
+      showError(e);
     }
   }
 
@@ -166,7 +166,7 @@ class LoginController extends GetxController
         }
       }
     } catch (e) {
-      _showError(AppException('加载保存的凭证失败', details: e), silent: true);
+      showError(e);
     }
   }
 
@@ -193,15 +193,9 @@ class LoginController extends GetxController
     await _secureStorage.delete(key: _keySavedPassword);
   }
 
-  // --- 辅助方法 ---
-
-  /// 显示错误提示
-  void _showError(dynamic error, {bool silent = false}) {
-    ErrorHandler.handle(error, silent: silent);
-  }
-
   /// 处理 Tab 切换，清空输入框
   void _handleTabChange() {
+    activeTabIndex.value = tabController.index;
     if (tabController.indexIsChanging) {
       principalController.clear();
       credentialsController.clear();
@@ -227,11 +221,7 @@ class LoginController extends GetxController
 
   /// 跳转到主页
   Future<void> _navigateToHome() async {
-    try {
-      Get.offNamed(Routes.HOME);
-    } catch (e) {
-      _showError(BusinessException('获取用户信息失败，请重新登录'));
-    }
+    Get.offNamed(Routes.HOME);
   }
 
   /// 验证输入是否有效
@@ -243,7 +233,7 @@ class LoginController extends GetxController
     if (principal.isEmpty || credentials.isEmpty) {
       final message =
           currentAuthType == AuthType.password ? '请输入账号和密码' : '请输入手机号和验证码';
-      _showError(ValidationException(message));
+      showError(message);
       return false;
     }
 
@@ -251,7 +241,7 @@ class LoginController extends GetxController
     if (currentAuthType == AuthType.verifyCode) {
       final phoneError = Validator.validatePhone(principal);
       if (phoneError != null) {
-        _showError(ValidationException(phoneError));
+        showError(phoneError);
         return false;
       }
     }
@@ -260,11 +250,17 @@ class LoginController extends GetxController
     if (currentAuthType == AuthType.password) {
       final passwordError = Validator.validatePassword(credentials);
       if (passwordError != null) {
-        _showError(ValidationException(passwordError));
+        showError(passwordError);
         return false;
       }
     }
 
     return true;
+  }
+
+  /// 显示错误提示
+  @override
+  void showError(dynamic error) {
+    ErrorHandler.handle(error);
   }
 }

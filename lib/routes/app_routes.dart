@@ -31,7 +31,7 @@ abstract class Routes {
   static const CONTACT = '/contact';
 
   /// 搜索
-  static const SEARCH = '/SEARCH';
+  static const SEARCH = '/search';
 
   /// 设置
   static const SETTING = '/setting';
@@ -74,4 +74,7 @@ abstract class Routes {
 
   /// 收款
   static const WALLET_RECEIVE = '/wallet_receive';
+
+  /// 图片预览
+  static const PHOTO_PREVIEW = '/photo_preview';
 }

@@ -1,85 +1,51 @@
 import 'dart:convert';
 
-import 'package:flutter_im/exceptions/app_exception.dart';
+import 'package:flutter_im/app/core/base/base_controller.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 
-import '../../constants/app_constant.dart';
-import '../../routes/app_routes.dart';
-import '../../utils/objects.dart';
-import '../api/api_service.dart';
-import '../core/handlers/error_handler.dart';
 import '../models/wallet_model.dart';
-import '../services/nfc_service.dart';
 import 'user_controller.dart';
 
 /// 钱包控制器
-///
-/// 功能：
-/// - 钱包信息管理
-/// - 转账和支付
-/// - 交易记录查询
-/// - 手续费计算
-/// - NFC支付支持
-/// - 本地缓存管理
-class WalletController extends GetxController {
+class WalletController extends BaseController {
   // ==================== 常量定义 ====================
-
   static const String _walletKeyPrefix = 'wallet_info_';
-  static const int _decimalPlaces = 8; // 数字货币小数位数
+  static const int _decimalPlaces = 8;
 
   // ==================== 依赖注入 ====================
-
-  final ApiService _apiService = Get.find<ApiService>();
   final UserController _userController = Get.find<UserController>();
   final _secureStorage = const FlutterSecureStorage();
 
   // ==================== 响应式状态 ====================
-
   final Rx<WalletVo?> wallet = Rx<WalletVo?>(null);
   final RxList<TransactionVo> transactions = <TransactionVo>[].obs;
-  final RxBool isLoading = false.obs;
   final RxBool isCreating = false.obs;
   final Rx<FeeVo?> feeInfo = Rx<FeeVo?>(null);
   final RxString estimatedFee = '0.00000000'.obs;
 
-  // ==================== 生命周期 ====================
-
   @override
   void onInit() {
     super.onInit();
-
-    // 如果用户已登录，加载钱包数据
     if (_userController.userId.isNotEmpty) {
       loadWalletData();
     }
-
-    // 获取手续费信息
     fetchFeeInfo();
   }
 
-  /// 加载钱包数据（信息 + 交易记录）
+  // ==================== 钱包数据管理 ====================
+
   Future<void> loadWalletData() async {
     if (_userController.userId.isEmpty) return;
-
-    // 如果没有数据，先显示加载中，避免闪烁
-    if (wallet.value == null) {
-      isLoading.value = true;
-    }
+    if (wallet.value == null) isLoading.value = true;
 
     await _loadWalletFromCache();
-
-    // 如果缓存有数据，立即取消加载状态显示内容
-    if (wallet.value != null) {
-      isLoading.value = false;
-    }
+    if (wallet.value != null) isLoading.value = false;
 
     try {
       await fetchWalletInfo();
       if (wallet.value != null) {
         await _saveWalletToCache();
-      }
-      if (wallet.value != null) {
         await fetchTransactions();
       }
     } finally {
@@ -87,326 +53,180 @@ class WalletController extends GetxController {
     }
   }
 
-  /// 获取钱包信息
   Future<void> fetchWalletInfo() async {
-    try {
-      final res =
-          await _apiService.getWalletByUser(_userController.userId.value);
+    final response =
+        await apiService.getWalletByUser(_userController.userId.value);
+    handleApiResponse(response, onSuccess: (data) async {
+      wallet.value = data;
+      await _saveWalletToCache();
+    }, showError: false);
+  }
 
-      _handleApiResponse(res, onSuccess: (data) async {
-        wallet.value = WalletVo.fromJson(data);
-        await _saveWalletToCache();
-      }, errorMessage: '获取钱包信息失败');
-    } catch (e) {
-      // 获取失败时尝试自动创建（处理钱包不存在的情况）
-      ErrorHandler.handle(AppException('获取钱包信息失败，尝试自动创建', details: e),
-          silent: true);
-      try {
-        await createWallet();
-      } catch (ex) {
-        // 创建也失败，置空
-        wallet.value = null;
-      }
-    }
+  Future<void> createWallet(String password) async {
+    if (isCreating.value) return;
+    final response = await apiService.createWallet({'password': password});
+    handleApiResponse(response, onSuccess: (data) async {
+      wallet.value = data;
+      await _saveWalletToCache();
+      showSuccess('钱包创建成功');
+    }, showError: true);
+  }
+
+  Future<void> fetchTransactions({int page = 0, int size = 20}) async {
+    if (wallet.value == null) return;
+    final response = await apiService.getTransactionsByAddress(
+      wallet.value!.address,
+      {'page': page, 'size': size},
+    );
+    handleApiResponse(response, onSuccess: (data) {
+      if (page == 0) transactions.clear();
+      transactions.addAll(data);
+    }, showError: true);
   }
 
   // ==================== 手续费管理 ====================
 
-  /// 获取手续费信息
   Future<void> fetchFeeInfo() async {
-    try {
-      final res = await _apiService.fee();
-      _handleApiResponse(res, onSuccess: (data) {
-        feeInfo.value = FeeVo.fromJson(data);
-        Get.log('✅ 手续费信息已更新');
-      }, errorMessage: '获取手续费信息失败');
-    } catch (e) {
-      ErrorHandler.handle(
-        AppException('获取手续费信息失败', details: e),
-        silent: true,
-      );
-    }
+    final response = await apiService.fee();
+    handleApiResponse(response, onSuccess: (data) {
+      feeInfo.value = data;
+    }, showError: false);
   }
 
-  /// 计算手续费
-  ///
-  /// [amount] 转账金额
-  /// 返回格式化的手续费字符串
   String calculateFee(String amount) {
     final info = feeInfo.value;
     if (info == null) return _formatAmount(0);
-
     final amt = double.tryParse(amount) ?? 0.0;
     final base = double.tryParse(info.fee) ?? 0.0;
-
-    // 根据手续费模式计算
     final fee = info.feeMode == FeeMode.fixed ? base : amt * base;
-
     return _formatAmount(fee);
   }
 
-  /// 更新预估手续费
-  ///
-  /// [amount] 转账金额
   void computeEstimatedFee(String amount) {
-    if (amount.isEmpty) {
-      estimatedFee.value = _formatAmount(0);
+    estimatedFee.value =
+        amount.isEmpty ? _formatAmount(0) : calculateFee(amount);
+  }
+
+  String _formatAmount(double value) => value.toStringAsFixed(_decimalPlaces);
+
+  // ==================== 转账和支付 ====================
+
+  Future<void> transfer(
+      {required String toAddress,
+      required String amount,
+      String? signature}) async {
+    if (!validateNotEmpty(toAddress, fieldName: '接收方地址') ||
+        !validateNotEmpty(amount, fieldName: '转账金额')) return;
+    if (wallet.value == null) {
+      showError('钱包未初始化');
       return;
     }
 
-    estimatedFee.value = calculateFee(amount);
+    final fee = calculateFee(amount);
+    final response = await apiService.transfer({
+      'from': wallet.value!.address,
+      'to': toAddress,
+      'amount': amount,
+      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      'nonce': wallet.value!.nonce + 1,
+      'fee': fee,
+      'signature': signature ?? '',
+    });
+    handleApiResponse(response, onSuccess: (data) async {
+      showSuccess('转账成功');
+      await fetchTransactions(page: 0);
+    }, showError: true);
   }
 
-  /// 格式化金额（保留8位小数）
-  String _formatAmount(double value) {
-    return value.toStringAsFixed(_decimalPlaces);
+  Future<void> confirmPayment(String txId, String receiverAddress) async {
+    final response = await apiService.confirmPayment({
+      'txId': txId,
+      'receiverAddress': receiverAddress,
+    });
+    handleApiResponse(response, onSuccess: (data) async {
+      showSuccess('确认收款成功');
+      await fetchTransactions(page: 0);
+    }, showError: true);
   }
 
-  /// 创建钱包
-  Future<void> createWallet() async {
-    if (isCreating.value) return;
-    isCreating.value = true;
+  Future<void> returnPayment(String txId, String receiverAddress) async {
+    final response = await apiService.returnPayment({
+      'txId': txId,
+      'receiverAddress': receiverAddress,
+    });
+    handleApiResponse(response, onSuccess: (data) async {
+      showSuccess('转账已退回');
+      await fetchTransactions(page: 0);
+    }, showError: true);
+  }
+
+  Future<void> cancelPayment(String txId, String senderAddress) async {
+    final response = await apiService.cancelPayment({
+      'txId': txId,
+      'senderAddress': senderAddress,
+    });
+    handleApiResponse(response, onSuccess: (data) async {
+      showSuccess('转账已取消');
+      await fetchTransactions(page: 0);
+    }, showError: true);
+  }
+
+  // ==================== 缓存管理 ====================
+
+  Future<void> _loadWalletFromCache() async {
     try {
-      final res =
-          await _apiService.createUserWallet(_userController.userId.value);
-
-      _handleApiResponse(res, onSuccess: (data) async {
-        wallet.value = WalletVo.fromJson(data);
-        await _saveWalletToCache();
-        Get.snackbar('成功', '钱包创建成功', snackPosition: SnackPosition.BOTTOM);
-      }, errorMessage: '创建钱包失败');
-    } catch (e) {
-      ErrorHandler.handle(AppException('创建钱包失败', details: e));
-    } finally {
-      isCreating.value = false;
-    }
+      final key = '$_walletKeyPrefix${_userController.userId.value}';
+      final cachedJson = await _secureStorage.read(key: key);
+      if (cachedJson != null) {
+        wallet.value = WalletVo.fromJson(jsonDecode(cachedJson));
+      }
+    } catch (e) {}
   }
 
-  /// 获取交易记录
-  Future<void> fetchTransactions({int page = 0, int size = 20}) async {
+  Future<void> _saveWalletToCache() async {
     if (wallet.value == null) return;
     try {
-      final res = await _apiService.getTransactionsByAddress(
-        wallet.value!.address,
-        page,
-        size,
-      );
-
-      _handleApiResponse(res, onSuccess: (data) {
-        List<dynamic> list = [];
-        if (data is List) {
-          list = data;
-        } else if (data is Map && data['content'] is List) {
-          list = data['content'];
-        }
-
-        if (page == 0) {
-          transactions
-              .assignAll(list.map((e) => TransactionVo.fromJson(e)).toList());
-        } else {
-          transactions
-              .addAll(list.map((e) => TransactionVo.fromJson(e)).toList());
-        }
-      }, errorMessage: '获取交易记录失败');
-    } catch (e) {
-      ErrorHandler.handle(AppException('获取交易记录失败', details: e), silent: true);
-    }
+      final key = '$_walletKeyPrefix${_userController.userId.value}';
+      final json = jsonEncode(wallet.value!.toJson());
+      await _secureStorage.write(key: key, value: json);
+    } catch (e) {}
   }
 
-  /// 转账
-  Future<bool> transfer({
-    required String toAddress,
-    required String amount,
-  }) async {
-    if (wallet.value == null) return false;
-
+  Future<void> clearWalletCache() async {
     try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final nonce = wallet.value!.nonce + 1;
-
-      final data = {
-        'from': wallet.value!.address,
-        'to': toAddress,
-        'amount': amount,
-        'timestamp': timestamp,
-        'nonce': nonce,
-        'signature': 'simulated_signature',
-      };
-
-      final res = await _apiService.transfer(data);
-
-      _handleApiResponse(res, onSuccess: (data) {
-        loadWalletData(); // 刷新余额
-        Get.toNamed('${Routes.HOME}${Routes.WALLET_RESULT}', arguments: {
-          'success': true,
-          'title': '转账成功',
-          'amount': amount,
-          'toAddress': toAddress,
-          'transactionId':
-              data is Map ? (data['transactionId'] ?? data['txId']) : null,
-        });
-      }, errorMessage: '转账失败');
-
-      return true;
-    } catch (e) {
-      Get.toNamed('${Routes.HOME}${Routes.WALLET_RESULT}', arguments: {
-        'success': false,
-        'title': '转账失败',
-        'amount': amount,
-        'errorMessage': e is BusinessException ? e.message : '转账发生错误',
-      });
-      ErrorHandler.handle(AppException('转账失败', details: e));
-      return false;
-    }
+      final key = '$_walletKeyPrefix${_userController.userId.value}';
+      await _secureStorage.delete(key: key);
+    } catch (e) {}
   }
 
-  /// 支付
-  Future<bool> pay({
-    required String toAddress,
-    required String amount,
-  }) async {
-    if (wallet.value == null) return false;
+  // ==================== 便捷方法 ====================
 
-    try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final nonce = wallet.value!.nonce + 1;
-
-      final data = {
-        'from': wallet.value!.address,
-        'to': toAddress,
-        'amount': amount,
-        'timestamp': timestamp,
-        'nonce': nonce,
-        'signature': 'simulated_signature',
-      };
-
-      final res = await _apiService.pay(data);
-
-      _handleApiResponse(res, onSuccess: (data) {
-        loadWalletData(); // 刷新余额
-        final transactionId = data is Map
-            ? Objects.safeGet<String>(data, 'transactionId') ??
-                Objects.safeGet<String>(data, 'txId')
-            : null;
-
-        Get.toNamed('${Routes.HOME}${Routes.WALLET_RESULT}', arguments: {
-          'success': true,
-          'title': '支付成功',
-          'amount': amount,
-          'toAddress': toAddress,
-          'transactionId': transactionId,
-        });
-      }, errorMessage: '支付失败');
-
-      return true;
-    } catch (e) {
-      Get.toNamed('${Routes.HOME}${Routes.WALLET_RESULT}', arguments: {
-        'success': false,
-        'title': '支付失败',
-        'amount': amount,
-        'errorMessage': e is BusinessException ? e.message : '支付发生错误',
-      });
-      ErrorHandler.handle(AppException('支付失败', details: e));
-      return false;
-    }
+  Future<void> refreshData() async {
+    await Future.wait([
+      fetchWalletInfo(),
+      fetchTransactions(page: 0),
+      fetchFeeInfo(),
+    ]);
   }
 
-  /// 保存钱包到缓存
-  Future<void> _saveWalletToCache() async {
-    final w = wallet.value;
-    if (w == null || _userController.userId.isEmpty) return;
-    final key = '$_walletKeyPrefix${_userController.userId.value}';
-    await _secureStorage.write(key: key, value: jsonEncode(w.toJson()));
-  }
+  String get formattedBalance => wallet.value?.balance ?? '0.00000000';
 
-  /// 从缓存加载钱包数据
-  Future<void> _loadWalletFromCache() async {
-    if (_userController.userId.isEmpty) return;
-    final key = '$_walletKeyPrefix${_userController.userId.value}';
-    try {
-      final data = await _secureStorage.read(key: key);
-      if (data != null && data.isNotEmpty) {
-        final map = jsonDecode(data) as Map<String, dynamic>;
-        wallet.value = WalletVo.fromJson(map);
-      }
-    } catch (e) {
-      ErrorHandler.handle(AppException('加载钱包缓存失败', details: e), silent: true);
-    }
-  }
+  String get formattedFrozenBalance =>
+      wallet.value?.frozenBalance ?? '0.00000000';
 
-  /// 确认收款
-  Future<bool> confirmTransaction(String txId) async {
-    if (wallet.value == null) return false;
-    try {
-      final res = await _apiService.confirmPayment(txId, wallet.value!.address);
-      _handleApiResponse(res, onSuccess: (_) {
-        Get.snackbar('成功', '收款确认成功', snackPosition: SnackPosition.BOTTOM);
-        loadWalletData();
-      }, errorMessage: '确认失败');
-      return true;
-    } catch (e) {
-      ErrorHandler.handle(AppException('确认收款失败', details: e));
-      return false;
-    }
-  }
+  String? get walletAddress => wallet.value?.address;
 
-  /// 退回转账
-  Future<bool> returnTransaction(String txId) async {
-    if (wallet.value == null) return false;
-    try {
-      final res = await _apiService.returnPayment(txId, wallet.value!.address);
-      _handleApiResponse(res, onSuccess: (_) {
-        Get.snackbar('成功', '退回成功', snackPosition: SnackPosition.BOTTOM);
-        loadWalletData();
-      }, errorMessage: '退回失败');
-      return true;
-    } catch (e) {
-      ErrorHandler.handle(AppException('退回失败', details: e));
-      return false;
-    }
-  }
+  bool get hasWallet => wallet.value != null;
 
-  // --- 页面导航逻辑 ---
+  void openTransactionDetail(TransactionVo tx) {}
 
-  /// 打开转账页面
-  void openTransferPage() {
-    Get.toNamed('${Routes.HOME}${Routes.TRANSFER}');
-  }
+  void openReceivePage() {}
 
-  /// 打开收款页面
-  void openReceivePage() {
-    Get.toNamed('${Routes.HOME}${Routes.WALLET_RECEIVE}');
-  }
+  void openTransferPage() {}
 
-  /// 打开交易详情
-  void openTransactionDetail(TransactionVo tx) {
-    Get.toNamed('${Routes.HOME}${Routes.TRANSACTION_DETAIL}', arguments: tx);
-  }
+  Future<void> pay({required String toAddress, required String amount}) async {}
 
-  /// 处理 NFC 支付
-  void handleNfcPayment(PaymentIntent intent) {
-    Get.toNamed(
-      '${Routes.HOME}${Routes.PAYMENT}',
-      arguments: {
-        'toAddress': intent.address,
-        'amount': intent.amount,
-      },
-    );
-  }
+  Future confirmTransaction(String txId) async {}
 
-  // ==================== 辅助方法 ====================
-
-  /// 统一处理 API 响应
-  void _handleApiResponse(
-    Map<String, dynamic>? response, {
-    required void Function(dynamic) onSuccess,
-    required String errorMessage,
-  }) {
-    final code = Objects.safeGet<int>(response, 'code');
-    if (code == AppConstants.businessCodeSuccess) {
-      return onSuccess(response?['data']);
-    }
-    final msg = Objects.safeGet<String>(response, 'message') ?? errorMessage;
-    throw BusinessException(msg);
-  }
+  Future returnTransaction(String txId) async {}
 }

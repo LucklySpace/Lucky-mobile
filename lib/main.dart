@@ -8,9 +8,9 @@ import 'package:get_storage/get_storage.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'app/database/app_database.dart';
+import 'binding/app_bindings.dart';
 import 'config/app_config.dart';
 import 'i18n/app_trans.dart';
-import 'routes/app_bindings.dart';
 import 'routes/app_pages.dart';
 import 'theme/app_theme_data.dart';
 

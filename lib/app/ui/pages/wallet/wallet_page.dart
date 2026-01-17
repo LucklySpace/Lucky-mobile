@@ -91,7 +91,7 @@ class WalletPage extends GetView<WalletController> {
                   fontSize: AppSizes.font18, color: AppColors.textHint)),
           const SizedBox(height: AppSizes.spacing24),
           ElevatedButton(
-            onPressed:
+            onPressed: () =>
                 controller.isCreating.value ? null : controller.createWallet,
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(

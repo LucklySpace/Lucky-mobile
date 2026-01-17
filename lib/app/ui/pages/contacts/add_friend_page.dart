@@ -6,10 +6,12 @@ import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../controller/contact_controller.dart';
+import '../../widgets/icon/icon_font.dart';
 
+/// 添加好友页面
 class AddFriendPage extends StatelessWidget {
-  AddFriendPage({Key? key}) : super(key: key) {
-    final ContactController controller = Get.find<ContactController>();
+  AddFriendPage({super.key}) {
+    // 进入页面时清空之前的搜索结果
     controller.searchResults.clear();
     controller.isSearching.value = false;
   }
@@ -25,73 +27,35 @@ class AddFriendPage extends StatelessWidget {
         title: const Text('添加好友'),
         elevation: 0,
         centerTitle: true,
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.surface,
         leading: IconButton(
-          icon:
-              const Icon(Icons.arrow_back_ios_new, color: AppColors.textWhite),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              color: AppColors.textPrimary, size: 20),
           onPressed: () => Get.back(),
         ),
       ),
       body: Column(
         children: [
-          /// **优化搜索框样式**
-          Container(
-            padding: const EdgeInsets.fromLTRB(
-              AppSizes.spacing16,
-              AppSizes.spacing8,
-              AppSizes.spacing16,
-              AppSizes.spacing16,
-            ),
-            child: Material(
-              elevation: 0,
-              borderRadius: BorderRadius.circular(AppSizes.radius8),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: '输入用户ID或手机号搜索',
-                  hintStyle: const TextStyle(color: AppColors.textHint),
-                  prefixIcon:
-                      const Icon(Icons.search, color: AppColors.primary),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.clear, color: AppColors.textHint),
-                    onPressed: () => _searchController.clear(),
-                  ),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.spacing16,
-                    vertical: AppSizes.spacing12,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radius8),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radius8),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radius8),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
-                ),
-                onSubmitted: (value) {
-                  if (value.isNotEmpty) {
-                    controller.searchUser(value);
-                  }
-                },
-              ),
-            ),
-          ),
+          /// 搜索区域
+          _buildSearchSection(context),
 
-          /// **搜索结果**
+          /// 我的 ID 展示
+          _buildMyIdSection(),
+
+          const SizedBox(height: AppSizes.spacing12),
+
+          /// 搜索结果列表
           Expanded(
             child: Obx(() {
               if (controller.isSearching.value) {
-                return _buildSearchingWidget(context);
+                return _buildSearchingWidget();
               }
               if (controller.searchResults.isEmpty) {
-                return _buildEmptyResultWidget(context);
+                // 如果搜索框为空，不显示“未找到”，显示一些引导
+                if (_searchController.text.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return _buildEmptyResultWidget();
               }
               return _buildUserList();
             }),
@@ -101,103 +65,176 @@ class AddFriendPage extends StatelessWidget {
     );
   }
 
-  /// **加载中**
-  Widget _buildSearchingWidget(BuildContext context) {
+  /// 构建搜索区域
+  Widget _buildSearchSection(BuildContext context) {
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.spacing16,
+        AppSizes.spacing10,
+        AppSizes.spacing16,
+        AppSizes.spacing16,
+      ),
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(AppSizes.radius8),
+        ),
+        child: TextField(
+          controller: _searchController,
+          textAlignVertical: TextAlignVertical.center,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: '输入用户ID或手机号搜索',
+            hintStyle: const TextStyle(
+                color: AppColors.textHint, fontSize: AppSizes.font14),
+            prefixIcon:
+                Icon(Iconfont.search, color: AppColors.textHint, size: 18),
+            suffixIcon: Obx(() => _searchController.text.isNotEmpty ||
+                    controller.isSearching.value
+                ? IconButton(
+                    icon: const Icon(Icons.cancel,
+                        color: AppColors.textHint, size: 18),
+                    onPressed: () {
+                      _searchController.clear();
+                      controller.searchResults.clear();
+                    },
+                  )
+                : const SizedBox.shrink()),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+          ),
+          onChanged: (value) {
+            // 触发 Obx 更新 suffixIcon
+            controller.isSearching.refresh();
+          },
+          onSubmitted: (value) {
+            if (value.trim().isNotEmpty) {
+              controller.searchUser(value.trim());
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  /// 构建“我的 ID”展示区
+  Widget _buildMyIdSection() {
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.only(bottom: AppSizes.spacing16),
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '我的 ID: ',
+              style: const TextStyle(
+                  color: AppColors.textSecondary, fontSize: AppSizes.font14),
+            ),
+            Obx(() => Text(
+                  controller.userId.value,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: AppSizes.font14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )),
+            const SizedBox(width: AppSizes.spacing8),
+            Icon(Iconfont.scan, size: 16, color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 加载中状态
+  Widget _buildSearchingWidget() {
+    return const Center(
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+      ),
+    );
+  }
+
+  /// 未找到结果状态
+  Widget _buildEmptyResultWidget() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-          ),
+          Icon(Iconfont.fromName('71shibai'),
+              size: 70, color: AppColors.textHint.withOpacity(0.5)),
           const SizedBox(height: AppSizes.spacing16),
           const Text(
-            '正在搜索...',
-            style: TextStyle(
-                color: AppColors.textSecondary, fontSize: AppSizes.font14),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// **未找到结果**
-  Widget _buildEmptyResultWidget(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(Icons.search_off_rounded,
-              size: AppSizes.spacing80, color: AppColors.textDisabled),
-          SizedBox(height: AppSizes.spacing12),
-          Text(
             '没有找到相关用户',
             style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: AppSizes.font16,
-                fontWeight: FontWeight.w500),
+                color: AppColors.textSecondary, fontSize: AppSizes.font15),
           ),
         ],
       ),
     );
   }
 
-  /// **用户列表**
+  /// 搜索结果用户列表
   Widget _buildUserList() {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: AppSizes.spacing8),
-      itemCount: controller.searchResults.length,
-      itemBuilder: (context, index) {
-        final user = controller.searchResults[index];
-
-        return Card(
-          margin: const EdgeInsets.symmetric(
-            horizontal: AppSizes.spacing16,
-            vertical: AppSizes.spacing6,
-          ),
-          color: AppColors.surface,
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppColors.surface,
-              child: _isValidUrl(user.avatar)
-                  ? ClipOval(
-                      child: CachedNetworkImage(
-                        imageUrl: user.avatar!,
-                        width: AppSizes.spacing40,
-                        height: AppSizes.spacing40,
+    return Container(
+      color: AppColors.surface,
+      child: ListView.separated(
+        itemCount: controller.searchResults.length,
+        separatorBuilder: (context, index) =>
+            const Divider(height: 1, indent: 72, color: AppColors.divider),
+        itemBuilder: (context, index) {
+          final user = controller.searchResults[index];
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.spacing16, vertical: AppSizes.spacing4),
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(AppSizes.radius8),
+              child: Container(
+                width: 44,
+                height: 44,
+                color: AppColors.background,
+                child: (user.avatar != null && user.avatar!.isNotEmpty)
+                    ? CachedNetworkImage(
+                        imageUrl: user.fullAvatar,
                         fit: BoxFit.cover,
-                        placeholder: (context, url) => const Icon(Icons.person,
-                            color: AppColors.textDisabled),
-                        errorWidget: (context, url, error) => const Icon(
-                            Icons.person,
-                            color: AppColors.textDisabled),
-                      ),
-                    )
-                  : const Icon(Icons.person, color: AppColors.textDisabled),
+                        placeholder: (context, url) => Icon(Iconfont.person,
+                            color: AppColors.textHint, size: 24),
+                        errorWidget: (context, url, error) => Icon(
+                            Iconfont.person,
+                            color: AppColors.textHint,
+                            size: 24),
+                      )
+                    : Icon(Iconfont.person,
+                        color: AppColors.textHint, size: 24),
+              ),
             ),
-            title: Text(user.name ?? "",
-                style: const TextStyle(fontWeight: FontWeight.w500)),
-            trailing:
-                const Icon(Icons.chevron_right, color: AppColors.textDisabled),
+            title: Text(
+              user.name,
+              style: const TextStyle(
+                fontSize: AppSizes.font16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            subtitle: Text(
+              'ID: ${user.friendId}',
+              style: const TextStyle(
+                  fontSize: AppSizes.font13, color: AppColors.textSecondary),
+            ),
+            trailing: Icon(Iconfont.fromName('right'),
+                size: 14, color: AppColors.textHint),
             onTap: () {
-              // TODO: 可添加查看详情逻辑
               Get.toNamed("${Routes.HOME}${Routes.FRIEND_PROFILE}",
                   arguments: {'userId': user.friendId});
             },
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
-  }
-
-  /// 检查URL是否有效
-  bool _isValidUrl(String? url) {
-    if (url == null || url.isEmpty) return false;
-    try {
-      final Uri uri = Uri.parse(url);
-      return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
-    } catch (e) {
-      return false;
-    }
   }
 }

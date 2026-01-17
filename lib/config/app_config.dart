@@ -1,3 +1,5 @@
+import 'dart:io';
+
 /// 环境类型枚举
 enum Environment {
   dev, // 开发环境
@@ -32,14 +34,23 @@ class AppConfig {
 
   // ==================== API 服务配置 ====================
 
+  /// API 服务器地址（主服务）
+  static String get apiServer => 'https://$_baseHost:9190';
+
+  /// 各服务的基础URL配置
+  static Map<String, String> get serviceUrls => {
+        'auth': '$apiServer/auth/api/v1', // 认证服务
+        'service': '$apiServer/service/api/v1', // 业务服务
+        'wallet': '$apiServer/wallet/api', // 钱包服务
+        'upload': '$apiServer/upload/api/v1', // 上传服务
+        'webrtc': 'https://$_baseHost', // WebRTC服务
+      };
+
   /// API 基础路径
   static const String baseApi = '/api';
 
-  /// API 服务器地址
-  static String get apiServer => 'https://$_baseHost:9190';
-
   /// WebSocket 服务器地址（IM通讯）
-  static String get wsServer => 'wss://$_baseHost:9190/im';
+  static String get wsServer => 'ws://$_baseHost:9191/im';
 
   /// WebSocket 服务器地址（会议）
   static String get meetWsServer => 'wss://$_baseHost:9190/meet';
@@ -53,14 +64,27 @@ class AppConfig {
   // ==================== 应用信息 ====================
 
   static const String appName = 'Lucky IM';
+  static const String version = '1.0.0';
   static const String appVersion = '1.0.0';
   static const String appDescription = '即时通讯应用';
   static const String appIcon = 'assets/logo.png';
+  static const String appIconSmall = 'assets/logo_small.png';
   static const String appCopyright =
       '© 2023-2026 Lucky IM. All rights reserved.';
 
+  /// 公司信息
+  static const String companyName = 'Lucky IM';
+
+  /// 官方网站
+  static const String website = 'https://github.com/LucklySpace';
+
+  /// 联系邮箱
+  static const String supportEmail = 'support@lucky-im.example.com';
+  static const String businessEmail = 'business@lucky-im.example.com';
+  static const String techSupportEmail = 'tech@lucky-im.example.com';
+
   /// 设备类型标识
-  static const String deviceType = 'mobile';
+  static final String deviceType = Platform.isIOS ? 'ios' : 'android';
 
   /// 协议类型: 'json' 或 'proto'
   static const String protocolType = 'proto';
@@ -135,6 +159,18 @@ class AppConfig {
   /// 获取完整的 API URL
   static String getApiUrl(String path) {
     return '$apiServer$baseApi$path';
+  }
+
+  /// 获取文件完整 URL (针对头像、图片等)
+  static String getFullUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    // 处理相对路径，这里默认拼接到 apiServer，具体根据后端情况调整
+    // 如果后端返回的是包含 /upload/ 的路径，可能需要拼接 upload 服务地址
+    final baseUrl = apiServer;
+    return '$baseUrl${url.startsWith('/') ? '' : '/'}$url';
   }
 
   /// 获取音频文件完整路径

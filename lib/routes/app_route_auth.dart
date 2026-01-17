@@ -9,7 +9,7 @@ class RouteAuthMiddleware extends GetMiddleware {
   @override
   //需要实现系统的该方法
   RouteSettings? redirect(String? route) {
-    UserController userController = Get.find();
+    UserController userController = Get.find<UserController>();
     String token = userController.token.value;
     //根据条件进行判断,满足条件进行跳转,否则不进行跳转（return null）
 

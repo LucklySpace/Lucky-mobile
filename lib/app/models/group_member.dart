@@ -2,13 +2,13 @@
 /// 对应后端 GroupMemberVo
 class GroupMember {
   /// 用户ID
-  final String userId;
+  final String memberId;
 
   /// 用户名称
-  final String? name;
+  final String name;
 
   /// 头像
-  final String? avatar;
+  final String avatar;
 
   /// 性别 (0: 未知, 1: 男, 2: 女)
   final int? gender;
@@ -28,16 +28,16 @@ class GroupMember {
   /// 群内昵称
   final String? alias;
 
-  /// 角色 (0: 普通成员, 1: 管理员, 2: 群主)
+  /// 角色 (0: 群主, 1: 管理员, 2: 普通成员)
   final int? role;
 
   /// 加入方式
   final String? joinType;
 
   const GroupMember({
-    required this.userId,
-    this.name,
-    this.avatar,
+    required this.memberId,
+    required this.name,
+    required this.avatar,
     this.gender,
     this.birthDay,
     this.location,
@@ -51,24 +51,33 @@ class GroupMember {
   /// 从 JSON 解析
   factory GroupMember.fromJson(Map<String, dynamic> json) {
     return GroupMember(
-      userId: json['userId'] as String,
-      name: json['name'] as String?,
-      avatar: json['avatar'] as String?,
-      gender: json['gender'] as int?,
-      birthDay: json['birthDay'] as String?,
-      location: json['location'] as String?,
-      selfSignature: json['selfSignature'] as String?,
-      mute: json['mute'] as int?,
-      alias: json['alias'] as String?,
-      role: json['role'] as int?,
-      joinType: json['joinType'] as String?,
+      memberId: json['memberId']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      avatar: json['avatar']?.toString() ?? '',
+      gender: _parseIntSafely(json['gender']),
+      birthDay: json['birthDay']?.toString() ?? '',
+      location: json['location']?.toString() ?? '',
+      selfSignature: json['selfSignature']?.toString() ?? '',
+      mute: _parseIntSafely(json['mute']),
+      alias: json['alias']?.toString() ?? '',
+      role: _parseIntSafely(json['role']),
+      joinType: json['joinType']?.toString() ?? '',
     );
+  }
+
+  /// 辅助方法：安全解析整数
+  static int _parseIntSafely(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    if (value is bool) return value ? 1 : 0;
+    return 0;
   }
 
   /// 转换为 JSON
   Map<String, dynamic> toJson() {
     return {
-      'userId': userId,
+      'memberId': memberId,
       'name': name,
       'avatar': avatar,
       'gender': gender,
@@ -84,37 +93,40 @@ class GroupMember {
 
   /// 获取显示名称（优先使用群内昵称）
   String get displayName =>
-      alias?.isNotEmpty == true ? alias! : (name ?? '未知用户');
+      alias?.isNotEmpty == true ? alias! : (name.isNotEmpty ? name : '未知用户');
 
   /// 是否为群主
-  bool get isOwner => role == 2;
+  bool get isOwner => role == 0;
 
   /// 是否为管理员
   bool get isAdmin => role == 1;
+
+  /// 是否为普通成员
+  bool get isMember => role == 2;
 
   /// 是否被禁言
   bool get isMuted => mute == 1;
 
   @override
   String toString() =>
-      'GroupMember(userId: $userId, name: $displayName, role: $role)';
+      'GroupMember(memberId: $memberId, name: $displayName, role: $role)';
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is GroupMember &&
           runtimeType == other.runtimeType &&
-          userId == other.userId;
+          memberId == other.memberId;
 
   @override
-  int get hashCode => userId.hashCode;
+  int get hashCode => memberId.hashCode;
 }
 
 /// 群成员角色枚举
 enum GroupMemberRole {
   owner(0, '群主'),
   admin(1, '管理员'),
-  member(3, '普通成员');
+  member(2, '普通成员');
 
   final int code;
   final String description;

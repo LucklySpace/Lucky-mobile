@@ -6,20 +6,26 @@ import 'single_message.dart';
 
 /// 新版 Message DTO，参考后端 IMessage 定义并扩展
 class MessageVideoCallDto {
-  String? fromId; // 发送者ID
-  String? toId; // 接收者ID
-  int? type; // 消息类型
+  final String fromId; // 发送者ID
+  final String toId; // 接收者ID
+  final int? type; // 消息类型
 
-  MessageVideoCallDto({this.fromId, this.toId, this.type});
+  MessageVideoCallDto({required this.fromId, required this.toId, this.type});
 
   factory MessageVideoCallDto.fromJson(Map<String, dynamic> json) {
     return MessageVideoCallDto(
-      fromId: json['fromId'],
-      toId: json['toId'],
-      type: (json['type'] is int)
-          ? json['type']
-          : (json['type'] != null ? (json['type'] as num).toInt() : null),
+      fromId: json['fromId']?.toString() ?? '',
+      toId: json['toId']?.toString() ?? '',
+      type: _parseIntSafely(json['type']),
     );
+  }
+
+  static int _parseIntSafely(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 }
 
@@ -27,51 +33,51 @@ class MessageVideoCallDto {
 /// 对应后端 IMessage
 class IMessage {
   /// 发送者ID
-  String fromId;
+  final String fromId;
 
   /// 消息临时ID（客户端生成）
-  String? messageTempId;
+  final String? messageTempId;
 
   /// 消息唯一标识（服务端生成，可为空）
-  String messageId;
+  final String messageId;
 
   /// 消息内容类型（用于决定 messageBody 的具体类型）
-  int messageContentType;
+  final int messageContentType;
 
   /// 消息体，根据 messageContentType 解析
-  MessageBody? messageBody;
+  final MessageBody? messageBody;
 
   /// 消息时间戳（毫秒）
-  int messageTime;
+  final int messageTime;
 
   /// 消息读取状态
-  int readStatus;
+  final int readStatus;
 
   /// 消息序号（用于排序）
-  int sequence;
+  final int sequence;
 
   /// 额外信息（Map）
-  Map<String, dynamic>? extra;
+  final Map<String, dynamic>? extra;
 
   /// 引用的消息信息（reply）
-  ReplyMessageInfo? replyMessage;
+  final ReplyMessageInfo? replyMessage;
 
   /// 被 @ 的用户 ID 列表
-  List<String>? mentionedUserIds;
+  final List<String>? mentionedUserIds;
 
   /// 是否 @ 所有人
-  bool? mentionAll;
+  final bool? mentionAll;
 
   /// 单聊接收者ID（仅在单聊时使用）
-  String? toId;
+  final String? toId;
 
   /// 群组ID（仅在群聊时使用）
-  String? groupId;
+  final String? groupId;
 
   /// 消息类型（单聊/群聊/系统等）
-  int messageType;
+  final int messageType;
 
-  IMessage({
+  const IMessage({
     required this.fromId,
     this.messageTempId,
     required this.messageId,
@@ -91,37 +97,24 @@ class IMessage {
 
   /// 从 JSON 映射创建 MessageReceiveDto
   factory IMessage.fromJson(Map<String, dynamic> json) {
+    final int contentType = _parseIntSafely(json['messageContentType']);
+    final int mType = _parseIntSafely(json['messageType']);
+
     return IMessage(
-      fromId: json['fromId'],
-      messageTempId: json['messageTempId'],
-      messageId: json['messageId'],
-      messageContentType: json['messageContentType'] is int
-          ? json['messageContentType']
-          : (json['messageContentType'] != null
-              ? (json['messageContentType'] as num).toInt()
-              : 0),
+      fromId: json['fromId']?.toString() ?? '',
+      messageTempId: json['messageTempId']?.toString(),
+      messageId: json['messageId']?.toString() ?? '',
+      messageContentType: contentType,
       messageBody: _parseMessageBody(
-          json['messageBody'] is String
-              ? _tryDecode(json['messageBody'])
-              : (json['messageBody'] as Map<String, dynamic>?),
-          json['messageContentType'] is int
-              ? json['messageContentType']
-              : (json['messageContentType'] != null
-                  ? (json['messageContentType'] as num).toInt()
-                  : 0)),
-      messageTime: json['messageTime'] is int
-          ? json['messageTime']
-          : (json['messageTime'] != null
-              ? (json['messageTime'] as num).toInt()
-              : 0),
-      readStatus: json['readStatus'] is int
-          ? json['readStatus']
-          : (json['readStatus'] != null
-              ? (json['readStatus'] as num).toInt()
-              : IMessageReadStatus.UNREAD),
-      sequence: json['sequence'] is int
-          ? json['sequence']
-          : (json['sequence'] != null ? (json['sequence'] as num).toInt() : 0),
+        json['messageBody'] is String
+            ? _tryDecode(json['messageBody'])
+            : (json['messageBody'] as Map<String, dynamic>?),
+        contentType,
+      ),
+      messageTime: _parseIntSafely(json['messageTime']),
+      readStatus: _parseIntSafely(json['readStatus'],
+          defaultValue: IMessageReadStatus.UNREAD.code),
+      sequence: _parseIntSafely(json['sequence']),
       extra: json['extra'] is Map
           ? Map<String, dynamic>.from(json['extra'])
           : (json['extra'] != null ? _tryDecode(json['extra']) : null),
@@ -132,31 +125,16 @@ class IMessage {
       mentionedUserIds: json['mentionedUserIds'] != null
           ? List<String>.from(json['mentionedUserIds'])
           : null,
-      mentionAll: json['mentionAll'] == null
-          ? false
-          : (json['mentionAll'] as bool? ??
-              (json['mentionAll'].toString().toLowerCase() == 'true')),
-      toId: (json['messageType'] is int
-                  ? json['messageType']
-                  : (json['messageType'] != null
-                      ? (json['messageType'] as num).toInt()
-                      : 0)) ==
-              MessageType.singleMessage.code
-          ? json['toId']
+      mentionAll: json['mentionAll'] is bool
+          ? json['mentionAll']
+          : json['mentionAll']?.toString().toLowerCase() == 'true',
+      toId: mType == MessageType.singleMessage.code
+          ? json['toId']?.toString()
           : null,
-      groupId: (json['messageType'] is int
-                  ? json['messageType']
-                  : (json['messageType'] != null
-                      ? (json['messageType'] as num).toInt()
-                      : 0)) ==
-              MessageType.groupMessage.code
-          ? json['groupId']
+      groupId: mType == MessageType.groupMessage.code
+          ? json['groupId']?.toString()
           : null,
-      messageType: json['messageType'] is int
-          ? json['messageType']
-          : (json['messageType'] != null
-              ? (json['messageType'] as num).toInt()
-              : 0),
+      messageType: mType,
     );
   }
 
@@ -187,57 +165,51 @@ class IMessage {
     return data;
   }
 
+  /// 辅助方法：安全解析整数
+  static int _parseIntSafely(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
   /// 根据 messageContentType 解析 messageBody
   static MessageBody? _parseMessageBody(Map<String, dynamic>? json, int? type) {
     if (json == null || type == null) return null;
 
     final contentType = MessageContentType.fromCode(type);
 
-    // 使用枚举匹配（新版 code）
     switch (contentType) {
-      // 系统提示
       case MessageContentType.tip:
         return SystemMessageBody.fromJson(json);
-
-      // 文本类
       case MessageContentType.text:
       case MessageContentType.markdown:
       case MessageContentType.richText:
         return TextMessageBody.fromJson(json);
-
-      // 媒体类
       case MessageContentType.image:
       case MessageContentType.gif:
+      case MessageContentType.sticker:
         return ImageMessageBody.fromJson(json);
       case MessageContentType.video:
         return VideoMessageBody.fromJson(json);
       case MessageContentType.audio:
         return AudioMessageBody.fromJson(json);
-      case MessageContentType.sticker:
-        return ImageMessageBody.fromJson(json);
-
-      // 文件类
       case MessageContentType.file:
       case MessageContentType.archive:
       case MessageContentType.document:
         return FileMessageBody.fromJson(json);
-
-      // 富媒体类
       case MessageContentType.location:
         return LocationMessageBody.fromJson(json);
       case MessageContentType.groupInvite:
       case MessageContentType.groupJoinApprove:
         return GroupInviteMessageBody.fromJson(json);
-
-      // 其它
       case MessageContentType.complex:
         return ComplexMessageBody.fromJson(json);
       case MessageContentType.recall:
         return RecallMessageBody.fromJson(json);
       case MessageContentType.edit:
         return EditMessageBody.fromJson(json);
-
-      // 未知类型 - 尝试旧版 code 兼容
       case MessageContentType.unknown:
       default:
         return null;
@@ -258,18 +230,13 @@ class IMessage {
     }
   }
 
-  /// 将 MessageReceiveDto 转换为 SingleMessage
+  /// 将 Message DTO 转换为 SingleMessage (本地存储用)
   static SingleMessage toSingleMessage(IMessage dto, String ownerId) {
-    if (dto.messageType != MessageType.singleMessage.code) {
-      throw Exception('Cannot convert non-private message to SingleMessage');
-    }
-
     return SingleMessage(
-      messageId: dto.messageId ?? '',
-      fromId: dto.fromId ?? '',
+      messageId: dto.messageId,
+      fromId: dto.fromId,
       toId: dto.toId ?? '',
       ownerId: ownerId,
-      // 将 messageBody 序列化为字符串存储（与后端一致）
       messageBody: jsonEncode(dto.messageBody?.toJson() ?? {}),
       messageContentType: dto.messageContentType,
       messageTime: dto.messageTime,
@@ -280,15 +247,11 @@ class IMessage {
     );
   }
 
-  /// 将 MessageReceiveDto 转换为 GroupMessage
+  /// 将 Message DTO 转换为 GroupMessage (本地存储用)
   static GroupMessage toGroupMessage(IMessage dto, String ownerId) {
-    if (dto.messageType != MessageType.groupMessage.code) {
-      throw Exception('Cannot convert non-group message to GroupMessage');
-    }
-
     return GroupMessage(
-      messageId: dto.messageId ?? '',
-      fromId: dto.fromId ?? '',
+      messageId: dto.messageId,
+      fromId: dto.fromId,
       ownerId: ownerId,
       groupId: dto.groupId ?? '',
       messageBody: jsonEncode(dto.messageBody?.toJson() ?? {}),
@@ -301,7 +264,7 @@ class IMessage {
     );
   }
 
-  /// 将 SingleMessage 转换为 MessageReceiveDto
+  /// 从本地 SingleMessage 转换为 Message DTO
   static IMessage fromSingleMessage(SingleMessage message) {
     final Map<String, dynamic>? bodyMap = _tryDecode(message.messageBody);
     return IMessage(
@@ -314,11 +277,12 @@ class IMessage {
       messageTime: message.messageTime,
       readStatus: message.readStatus,
       sequence: message.sequence,
-      extra: message.extra != null ? _tryDecode(message.extra) : null,
+      extra:
+          message.extra?.isNotEmpty == true ? _tryDecode(message.extra) : null,
     );
   }
 
-  /// 将 GroupMessage 转换为 MessageReceiveDto
+  /// 从本地 GroupMessage 转换为 Message DTO
   static IMessage fromGroupMessage(GroupMessage message) {
     final Map<String, dynamic>? bodyMap = _tryDecode(message.messageBody);
     return IMessage(
@@ -331,71 +295,77 @@ class IMessage {
       messageTime: message.messageTime,
       readStatus: message.readStatus,
       sequence: message.sequence,
-      extra: message.extra != null ? _tryDecode(message.extra) : null,
+      extra:
+          message.extra?.isNotEmpty == true ? _tryDecode(message.extra) : null,
     );
   }
 
-  /// 获取消息体的文本表示
+  /// 获取消息体的文本预览
   String getMessageBodyText() {
-    if (messageBody == null) {
-      return '';
-    }
+    final body = messageBody;
+    if (body == null) return '';
 
-    if (messageBody is TextMessageBody) {
-      return (messageBody as TextMessageBody).text ?? '';
-    } else if (messageBody is ImageMessageBody) {
-      return '[图片]';
-    } else if (messageBody is VideoMessageBody) {
-      return '[视频]';
-    } else if (messageBody is AudioMessageBody) {
-      return '[语音]';
-    } else if (messageBody is FileMessageBody) {
-      return '[文件]';
-    } else if (messageBody is LocationMessageBody) {
-      return '[位置]';
-    } else if (messageBody is ComplexMessageBody) {
-      return '[复合消息]';
-    } else if (messageBody is GroupInviteMessageBody) {
-      return '[群邀请]';
-    } else if (messageBody is SystemMessageBody) {
-      return (messageBody as SystemMessageBody).text ?? '[系统消息]';
-    } else if (messageBody is RecallMessageBody) {
-      return '[撤回消息]';
-    } else if (messageBody is EditMessageBody) {
-      return '[编辑消息]';
-    } else {
-      return '[未知类型消息]';
-    }
+    if (body is TextMessageBody) return body.text ?? '';
+    if (body is ImageMessageBody) return '[图片]';
+    if (body is VideoMessageBody) return '[视频]';
+    if (body is AudioMessageBody) return '[语音]';
+    if (body is FileMessageBody) return '[文件]';
+    if (body is LocationMessageBody) return '[位置]';
+    if (body is ComplexMessageBody) return '[复合消息]';
+    if (body is GroupInviteMessageBody) return '[群邀请]';
+    if (body is SystemMessageBody) return body.text ?? '[系统消息]';
+    if (body is RecallMessageBody) return '[撤回消息]';
+    if (body is EditMessageBody) return '[编辑消息]';
+    return '[未知类型消息]';
+  }
+
+  /// 构建消息请求参数
+  static Map<String, dynamic> buildRequest({
+    required String fromId,
+    required String targetId,
+    required int messageType,
+    required MessageBody body,
+    required int contentType,
+  }) {
+    final isGroup = messageType == MessageType.groupMessage.code;
+    return {
+      'fromId': fromId,
+      if (isGroup) 'groupId': targetId else 'toId': targetId,
+      'messageType': messageType,
+      'messageContentType': contentType,
+      'messageBody': body.toJson(),
+      'messageTime': DateTime.now().millisecondsSinceEpoch,
+    };
   }
 }
 
 /// 消息体基类
 abstract class MessageBody {
-  MessageBody() {}
+  const MessageBody();
 
   Map<String, dynamic> toJson();
 }
 
 /// Reply 引用消息信息
 class ReplyMessageInfo {
-  String? messageId;
-  String? fromId;
-  String? previewText;
-  int? messageContentType;
+  final String? messageId;
+  final String? fromId;
+  final String? previewText;
+  final int? messageContentType;
 
-  ReplyMessageInfo(
-      {this.messageId, this.fromId, this.previewText, this.messageContentType});
+  const ReplyMessageInfo({
+    this.messageId,
+    this.fromId,
+    this.previewText,
+    this.messageContentType,
+  });
 
   factory ReplyMessageInfo.fromJson(Map<String, dynamic> json) {
     return ReplyMessageInfo(
-      messageId: json['messageId'],
-      fromId: json['fromId'],
-      previewText: json['previewText'],
-      messageContentType: json['messageContentType'] is int
-          ? json['messageContentType']
-          : (json['messageContentType'] != null
-              ? (json['messageContentType'] as num).toInt()
-              : null),
+      messageId: json['messageId']?.toString(),
+      fromId: json['fromId']?.toString(),
+      previewText: json['previewText']?.toString(),
+      messageContentType: IMessage._parseIntSafely(json['messageContentType']),
     );
   }
 
@@ -411,247 +381,158 @@ class ReplyMessageInfo {
 
 /// 文本消息体
 class TextMessageBody extends MessageBody {
-  String? text;
+  final String? text;
 
-  TextMessageBody({this.text});
+  const TextMessageBody({this.text});
 
   factory TextMessageBody.fromJson(Map<String, dynamic> json) {
-    return TextMessageBody(
-      text: json['text'],
-    );
+    return TextMessageBody(text: json['text']?.toString());
   }
 
   @override
-  Map<String, dynamic> toJson() {
-    return {
-      'text': text,
-    };
-  }
+  Map<String, dynamic> toJson() => {'text': text};
 
   static TextMessageBody? fromMessageBody(MessageBody? messageBody) {
-    if (messageBody == null) return null;
     if (messageBody is TextMessageBody) return messageBody;
-    try {
-      final json = messageBody.toJson();
-      return TextMessageBody.fromJson(json);
-    } catch (e) {
-      print('转换TextMessageBody失败: $e');
-      return null;
-    }
+    return null;
   }
 }
 
 /// 图片消息体
 class ImageMessageBody extends MessageBody {
-  String? path;
-  String? name;
-  int? size;
+  final String? path;
+  final String? name;
+  final int? size;
 
-  ImageMessageBody({this.path, this.name, this.size});
+  const ImageMessageBody({this.path, this.name, this.size});
 
   factory ImageMessageBody.fromJson(Map<String, dynamic> json) {
     return ImageMessageBody(
-      path: json['path'],
-      name: json['name'],
-      size: json['size'] is int
-          ? json['size']
-          : (json['size'] != null ? (json['size'] as num).toInt() : null),
+      path: json['path']?.toString(),
+      name: json['name']?.toString(),
+      size: IMessage._parseIntSafely(json['size']),
     );
   }
 
-  static ImageMessageBody? fromMessageBody(MessageBody? messageBody) {
-    if (messageBody == null) return null;
-    if (messageBody is ImageMessageBody) return messageBody;
-    try {
-      final json = messageBody.toJson();
-      return ImageMessageBody.fromJson(json);
-    } catch (e) {
-      print('转换ImageMessageBody失败: $e');
-      return null;
-    }
-  }
-
   @override
-  Map<String, dynamic> toJson() {
-    return {
-      'path': path,
-      'name': name,
-      'size': size,
-    };
+  Map<String, dynamic> toJson() => {'path': path, 'name': name, 'size': size};
+
+  static ImageMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody is ImageMessageBody) return messageBody;
+    return null;
   }
 }
 
 /// 视频消息体
 class VideoMessageBody extends MessageBody {
-  String? path;
-  String? name;
-  int? duration; // seconds
-  int? size;
+  final String? path;
+  final String? name;
+  final int? duration; // seconds
+  final int? size;
 
-  VideoMessageBody({this.path, this.name, this.duration, this.size});
+  const VideoMessageBody({this.path, this.name, this.duration, this.size});
 
   factory VideoMessageBody.fromJson(Map<String, dynamic> json) {
     return VideoMessageBody(
-      path: json['path'],
-      name: json['name'],
-      duration: json['duration'] is int
-          ? json['duration']
-          : (json['duration'] != null
-              ? (json['duration'] as num).toInt()
-              : null),
-      size: json['size'] is int
-          ? json['size']
-          : (json['size'] != null ? (json['size'] as num).toInt() : null),
+      path: json['path']?.toString(),
+      name: json['name']?.toString(),
+      duration: IMessage._parseIntSafely(json['duration']),
+      size: IMessage._parseIntSafely(json['size']),
     );
-  }
-
-  static VideoMessageBody? fromMessageBody(MessageBody? messageBody) {
-    if (messageBody == null) return null;
-    if (messageBody is VideoMessageBody) return messageBody;
-    try {
-      final json = messageBody.toJson();
-      return VideoMessageBody.fromJson(json);
-    } catch (e) {
-      print('转换VideoMessageBody失败: $e');
-      return null;
-    }
   }
 
   @override
   Map<String, dynamic> toJson() {
-    return {
-      'path': path,
-      'name': name,
-      'duration': duration,
-      'size': size,
-    };
+    return {'path': path, 'name': name, 'duration': duration, 'size': size};
+  }
+
+  static VideoMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody is VideoMessageBody) return messageBody;
+    return null;
   }
 }
 
 /// 语音消息体
 class AudioMessageBody extends MessageBody {
-  String? path;
-  int? duration;
-  int? size;
+  final String? path;
+  final int? duration;
+  final int? size;
 
-  AudioMessageBody({this.path, this.duration, this.size});
+  const AudioMessageBody({this.path, this.duration, this.size});
 
   factory AudioMessageBody.fromJson(Map<String, dynamic> json) {
     return AudioMessageBody(
-      path: json['path'],
-      duration: json['duration'] is int
-          ? json['duration']
-          : (json['duration'] != null
-              ? (json['duration'] as num).toInt()
-              : null),
-      size: json['size'] is int
-          ? json['size']
-          : (json['size'] != null ? (json['size'] as num).toInt() : null),
+      path: json['path']?.toString(),
+      duration: IMessage._parseIntSafely(json['duration']),
+      size: IMessage._parseIntSafely(json['size']),
     );
-  }
-
-  static AudioMessageBody? fromMessageBody(MessageBody? messageBody) {
-    if (messageBody == null) return null;
-    if (messageBody is AudioMessageBody) return messageBody;
-    try {
-      final json = messageBody.toJson();
-      return AudioMessageBody.fromJson(json);
-    } catch (e) {
-      print('转换AudioMessageBody失败: $e');
-      return null;
-    }
   }
 
   @override
   Map<String, dynamic> toJson() {
-    return {
-      'path': path,
-      'duration': duration,
-      'size': size,
-    };
+    return {'path': path, 'duration': duration, 'size': size};
+  }
+
+  static AudioMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody is AudioMessageBody) return messageBody;
+    return null;
   }
 }
 
 /// 文件消息体
 class FileMessageBody extends MessageBody {
-  String? path;
-  String? name;
-  String? suffix;
-  int? size;
+  final String? path;
+  final String? name;
+  final String? suffix;
+  final int? size;
 
-  FileMessageBody({this.path, this.name, this.suffix, this.size});
+  const FileMessageBody({this.path, this.name, this.suffix, this.size});
 
   factory FileMessageBody.fromJson(Map<String, dynamic> json) {
     return FileMessageBody(
-      path: json['path'],
-      name: json['name'],
-      suffix: json['suffix'],
-      size: json['size'] is int
-          ? json['size']
-          : (json['size'] != null ? (json['size'] as num).toInt() : null),
+      path: json['path']?.toString(),
+      name: json['name']?.toString(),
+      suffix: json['suffix']?.toString(),
+      size: IMessage._parseIntSafely(json['size']),
     );
   }
 
   @override
   Map<String, dynamic> toJson() {
-    return {
-      'path': path,
-      'name': name,
-      'suffix': suffix,
-      'size': size,
-    };
+    return {'path': path, 'name': name, 'suffix': suffix, 'size': size};
   }
 
   static FileMessageBody? fromMessageBody(MessageBody? messageBody) {
-    if (messageBody == null) return null;
     if (messageBody is FileMessageBody) return messageBody;
-    try {
-      final json = messageBody.toJson();
-      return FileMessageBody.fromJson(json);
-    } catch (e) {
-      print('转换FileMessageBody失败: $e');
-      return null;
-    }
+    return null;
   }
 }
 
 /// 位置消息体
 class LocationMessageBody extends MessageBody {
-  String? title;
-  String? address;
-  double? latitude;
-  double? longitude;
+  final String? title;
+  final String? address;
+  final double? latitude;
+  final double? longitude;
 
-  LocationMessageBody(
-      {this.title, this.address, this.latitude, this.longitude});
+  const LocationMessageBody({
+    this.title,
+    this.address,
+    this.latitude,
+    this.longitude,
+  });
 
   factory LocationMessageBody.fromJson(Map<String, dynamic> json) {
     return LocationMessageBody(
-      title: json['title'],
-      address: json['address'],
+      title: json['title']?.toString(),
+      address: json['address']?.toString(),
       latitude: json['latitude'] is num
           ? (json['latitude'] as num).toDouble()
-          : (json['latitude'] != null
-              ? double.tryParse(json['latitude'].toString())
-              : null),
+          : double.tryParse(json['latitude']?.toString() ?? ''),
       longitude: json['longitude'] is num
           ? (json['longitude'] as num).toDouble()
-          : (json['longitude'] != null
-              ? double.tryParse(json['longitude'].toString())
-              : null),
+          : double.tryParse(json['longitude']?.toString() ?? ''),
     );
-  }
-
-  static LocationMessageBody? fromMessageBody(MessageBody? messageBody) {
-    if (messageBody == null) return null;
-    if (messageBody is LocationMessageBody) return messageBody;
-    try {
-      final json = messageBody.toJson();
-      return LocationMessageBody.fromJson(json);
-    } catch (e) {
-      print('转换LocationMessageBody失败: $e');
-      return null;
-    }
   }
 
   @override
@@ -663,39 +544,41 @@ class LocationMessageBody extends MessageBody {
       'longitude': longitude,
     };
   }
+
+  static LocationMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody is LocationMessageBody) return messageBody;
+    return null;
+  }
 }
 
 /// 混合消息体（Complex）
 class ComplexMessageBody extends MessageBody {
-  List<Part> parts;
-  List<ImageMessageBody> images;
-  List<VideoMessageBody> videos;
+  final List<Part> parts;
+  final List<ImageMessageBody> images;
+  final List<VideoMessageBody> videos;
 
-  ComplexMessageBody(
-      {List<Part>? parts,
-      List<ImageMessageBody>? images,
-      List<VideoMessageBody>? videos})
-      : parts = parts ?? [],
-        images = images ?? [],
-        videos = videos ?? [];
+  const ComplexMessageBody({
+    this.parts = const [],
+    this.images = const [],
+    this.videos = const [],
+  });
 
   factory ComplexMessageBody.fromJson(Map<String, dynamic> json) {
-    final partsJson = (json['parts'] as List?) ?? [];
-    final imagesJson = (json['images'] as List?) ?? [];
-    final videosJson = (json['videos'] as List?) ?? [];
-
     return ComplexMessageBody(
-      parts: partsJson
-          .map((e) => Part.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList(),
-      images: imagesJson
-          .map((e) =>
-              ImageMessageBody.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList(),
-      videos: videosJson
-          .map((e) =>
-              VideoMessageBody.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList(),
+      parts: (json['parts'] as List?)
+              ?.map((e) => Part.fromJson(Map<String, dynamic>.from(e)))
+              .toList() ??
+          [],
+      images: (json['images'] as List?)
+              ?.map((e) =>
+                  ImageMessageBody.fromJson(Map<String, dynamic>.from(e)))
+              .toList() ??
+          [],
+      videos: (json['videos'] as List?)
+              ?.map((e) =>
+                  VideoMessageBody.fromJson(Map<String, dynamic>.from(e)))
+              .toList() ??
+          [],
     );
   }
 
@@ -711,45 +594,38 @@ class ComplexMessageBody extends MessageBody {
 
 /// Part 嵌套类
 class Part {
-  String type;
-  Map<String, dynamic>? content;
-  Map<String, dynamic>? meta;
+  final String type;
+  final Map<String, dynamic>? content;
+  final Map<String, dynamic>? meta;
 
-  Part({required this.type, this.content, this.meta});
+  const Part({required this.type, this.content, this.meta});
 
   factory Part.fromJson(Map<String, dynamic> json) {
     return Part(
-      type: json['type'],
-      content: json['content'] is Map
-          ? Map<String, dynamic>.from(json['content'])
-          : null,
-      meta:
-          json['meta'] is Map ? Map<String, dynamic>.from(json['meta']) : null,
+      type: json['type']?.toString() ?? '',
+      content: json['content'] as Map<String, dynamic>?,
+      meta: json['meta'] as Map<String, dynamic>?,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'type': type,
-      'content': content,
-      'meta': meta,
-    };
+    return {'type': type, 'content': content, 'meta': meta};
   }
 }
 
 /// 群组邀请消息体
 class GroupInviteMessageBody extends MessageBody {
-  String? requestId;
-  String? groupId;
-  String? groupName;
-  String? groupAvatar;
-  String? inviterId;
-  String? inviterName;
-  String? userId;
-  String? userName;
-  int? approveStatus; // 1:待处理 2:已同意 3:已拒绝
+  final String? requestId;
+  final String? groupId;
+  final String? groupName;
+  final String? groupAvatar;
+  final String? inviterId;
+  final String? inviterName;
+  final String? userId;
+  final String? userName;
+  final int? approveStatus; // 1:待处理 2:已同意 3:已拒绝
 
-  GroupInviteMessageBody({
+  const GroupInviteMessageBody({
     this.requestId,
     this.groupId,
     this.groupName,
@@ -763,32 +639,16 @@ class GroupInviteMessageBody extends MessageBody {
 
   factory GroupInviteMessageBody.fromJson(Map<String, dynamic> json) {
     return GroupInviteMessageBody(
-      requestId: json['requestId'],
-      groupId: json['groupId'],
-      groupName: json['groupName'],
-      groupAvatar: json['groupAvatar'],
-      inviterId: json['inviterId'],
-      inviterName: json['inviterName'],
-      userId: json['userId'],
-      userName: json['userName'],
-      approveStatus: json['approveStatus'] is int
-          ? json['approveStatus']
-          : (json['approveStatus'] != null
-              ? (json['approveStatus'] as num).toInt()
-              : null),
+      requestId: json['requestId']?.toString(),
+      groupId: json['groupId']?.toString(),
+      groupName: json['groupName']?.toString(),
+      groupAvatar: json['groupAvatar']?.toString(),
+      inviterId: json['inviterId']?.toString(),
+      inviterName: json['inviterName']?.toString(),
+      userId: json['userId']?.toString(),
+      userName: json['userName']?.toString(),
+      approveStatus: IMessage._parseIntSafely(json['approveStatus']),
     );
-  }
-
-  static GroupInviteMessageBody? fromMessageBody(MessageBody? messageBody) {
-    if (messageBody == null) return null;
-    if (messageBody is GroupInviteMessageBody) return messageBody;
-    try {
-      final json = messageBody.toJson();
-      return GroupInviteMessageBody.fromJson(json);
-    } catch (e) {
-      print('转换GroupInviteMessageBody失败: $e');
-      return null;
-    }
   }
 
   @override
@@ -805,86 +665,59 @@ class GroupInviteMessageBody extends MessageBody {
       'approveStatus': approveStatus,
     };
   }
+
+  static GroupInviteMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody is GroupInviteMessageBody) return messageBody;
+    return null;
+  }
 }
 
 /// 系统消息体
 class SystemMessageBody extends MessageBody {
-  String? text;
+  final String? text;
 
-  SystemMessageBody({this.text});
+  const SystemMessageBody({this.text});
 
   factory SystemMessageBody.fromJson(Map<String, dynamic> json) {
-    return SystemMessageBody(
-      text: json['text'],
-    );
-  }
-
-  static SystemMessageBody? fromMessageBody(MessageBody? messageBody) {
-    if (messageBody == null) return null;
-    if (messageBody is SystemMessageBody) return messageBody;
-    try {
-      final json = messageBody.toJson();
-      return SystemMessageBody.fromJson(json);
-    } catch (e) {
-      print('转换SystemMessageBody失败: $e');
-      return null;
-    }
+    return SystemMessageBody(text: json['text']?.toString());
   }
 
   @override
-  Map<String, dynamic> toJson() {
-    return {
-      'text': text,
-    };
+  Map<String, dynamic> toJson() => {'text': text};
+
+  static SystemMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody is SystemMessageBody) return messageBody;
+    return null;
   }
 }
 
-/// Recall 撤回消息体（messageContentType == 11）
+/// Recall 撤回消息体
 class RecallMessageBody extends MessageBody {
-  String? messageId;
-  String? operatorId;
-  String? reason;
-  int? recallTime;
-  String? chatId;
-  int? chatType;
+  final String? messageId;
+  final String? operatorId;
+  final String? reason;
+  final int? recallTime;
+  final String? chatId;
+  final int? chatType;
 
-  RecallMessageBody(
-      {this.messageId,
-      this.operatorId,
-      this.reason,
-      this.recallTime,
-      this.chatId,
-      this.chatType});
+  const RecallMessageBody({
+    this.messageId,
+    this.operatorId,
+    this.reason,
+    this.recallTime,
+    this.chatId,
+    this.chatType,
+  });
 
   factory RecallMessageBody.fromJson(Map<String, dynamic> json) {
     return RecallMessageBody(
-      messageId: json['messageId'],
-      operatorId: json['operatorId'],
-      reason: json['reason'],
-      recallTime: json['recallTime'] is int
-          ? json['recallTime']
-          : (json['recallTime'] != null
-              ? (json['recallTime'] as num).toInt()
-              : null),
-      chatId: json['chatId'],
-      chatType: json['chatType'] is int
-          ? json['chatType']
-          : (json['chatType'] != null
-              ? (json['chatType'] as num).toInt()
-              : null),
+      messageId: json['messageId']?.toString(),
+      operatorId: json['operatorId']?.toString(),
+      reason: json['reason']?.toString(),
+      recallTime: IMessage._parseIntSafely(json['recallTime']),
+      chatId: json['chatId']?.toString(),
+      chatType: IMessage._parseIntSafely(json['chatType']),
     );
-  }
-
-  static RecallMessageBody? fromMessageBody(MessageBody? messageBody) {
-    if (messageBody == null) return null;
-    if (messageBody is RecallMessageBody) return messageBody;
-    try {
-      final json = messageBody.toJson();
-      return RecallMessageBody.fromJson(json);
-    } catch (e) {
-      print('转换RecallMessageBody失败: $e');
-      return null;
-    }
   }
 
   @override
@@ -898,20 +731,25 @@ class RecallMessageBody extends MessageBody {
       'chatType': chatType,
     };
   }
+
+  static RecallMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody is RecallMessageBody) return messageBody;
+    return null;
+  }
 }
 
-/// Edit 编辑消息体（messageContentType == 12）
+/// Edit 编辑消息体
 class EditMessageBody extends MessageBody {
-  String? messageId;
-  String? editorId;
-  int? editTime;
-  int? newMessageContentType;
-  Map<String, dynamic>? newMessageBody;
-  String? oldPreview;
-  String? chatId;
-  int? chatType;
+  final String? messageId;
+  final String? editorId;
+  final int? editTime;
+  final int? newMessageContentType;
+  final Map<String, dynamic>? newMessageBody;
+  final String? oldPreview;
+  final String? chatId;
+  final int? chatType;
 
-  EditMessageBody({
+  const EditMessageBody({
     this.messageId,
     this.editorId,
     this.editTime,
@@ -924,28 +762,15 @@ class EditMessageBody extends MessageBody {
 
   factory EditMessageBody.fromJson(Map<String, dynamic> json) {
     return EditMessageBody(
-      messageId: json['messageId'],
-      editorId: json['editorId'],
-      editTime: json['editTime'] is int
-          ? json['editTime']
-          : (json['editTime'] != null
-              ? (json['editTime'] as num).toInt()
-              : null),
-      newMessageContentType: json['newMessageContentType'] is int
-          ? json['newMessageContentType']
-          : (json['newMessageContentType'] != null
-              ? (json['newMessageContentType'] as num).toInt()
-              : null),
-      newMessageBody: json['newMessageBody'] is Map
-          ? Map<String, dynamic>.from(json['newMessageBody'])
-          : null,
-      oldPreview: json['oldPreview'],
-      chatId: json['chatId'],
-      chatType: json['chatType'] is int
-          ? json['chatType']
-          : (json['chatType'] != null
-              ? (json['chatType'] as num).toInt()
-              : null),
+      messageId: json['messageId']?.toString(),
+      editorId: json['editorId']?.toString(),
+      editTime: IMessage._parseIntSafely(json['editTime']),
+      newMessageContentType:
+          IMessage._parseIntSafely(json['newMessageContentType']),
+      newMessageBody: json['newMessageBody'] as Map<String, dynamic>?,
+      oldPreview: json['oldPreview']?.toString(),
+      chatId: json['chatId']?.toString(),
+      chatType: IMessage._parseIntSafely(json['chatType']),
     );
   }
 
@@ -962,17 +787,23 @@ class EditMessageBody extends MessageBody {
       'chatType': chatType,
     };
   }
+
+  static EditMessageBody? fromMessageBody(MessageBody? messageBody) {
+    if (messageBody is EditMessageBody) return messageBody;
+    return null;
+  }
 }
 
-/// 扩展方法：基于 MessageReceiveDto 判断类型
+/// 扩展方法：基于 IMessage 判断类型
 extension MessageTypeExtension on IMessage {
   bool get isSingleMessage => messageType == MessageType.singleMessage.code;
 
   bool get isGroupMessage => messageType == MessageType.groupMessage.code;
 
-  bool get isVideoMessage => messageContentType == 3;
+  bool get isVideoMessage =>
+      messageContentType == MessageContentType.video.code;
 
-  bool get isSystemMessage => messageContentType == 10;
+  bool get isSystemMessage => messageContentType == MessageContentType.tip.code;
 
   /// 获取目标 ID（单聊返回 toId，群聊返回 groupId）
   String? get targetId {

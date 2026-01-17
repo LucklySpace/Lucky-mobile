@@ -2,98 +2,91 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_im/constants/app_colors.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
 
 import '../../../../config/app_config.dart';
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../controller/user_controller.dart';
-import '../../../models/User.dart';
+import '../../../models/user.dart';
 import '../../widgets/crop/crop_image.dart';
+import '../../widgets/icon/icon_font.dart';
 
 /// 用户资料页面
+/// 支持查看和编辑个人信息
 class UserProfilePage extends GetView<UserController> {
   const UserProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 初始化控制器
+    // 使用局部变量保持输入状态
     final usernameController = TextEditingController();
     final birthdayController = TextEditingController();
     final locationController = TextEditingController();
     final signatureController = TextEditingController();
-
     final gender = RxInt(-1);
     final avatarUrl = RxString("");
 
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
         if (controller.isEditing.value) {
           controller.isEditing.value = false;
-          return false;
         }
-        return true;
       },
       child: Obx(() {
         final isEditing = controller.isEditing.value;
-        final userInfo = controller.userInfo;
+        final userInfo = controller.userInfo.value;
 
         // 非编辑模式下同步数据
         if (!isEditing) {
-          usernameController.text = userInfo['name'] as String? ?? '';
-          birthdayController.text = userInfo['birthday'] as String? ?? '';
-          locationController.text = userInfo['location'] as String? ?? '';
-          signatureController.text = userInfo['selfSignature'] as String? ?? '';
-          gender.value = userInfo['gender'] as int? ?? -1;
-          avatarUrl.value = userInfo['avatar'] as String? ?? '';
+          usernameController.text = userInfo?.name ?? '';
+          birthdayController.text = userInfo?.birthday ?? '';
+          locationController.text = userInfo?.location ?? '';
+          signatureController.text = userInfo?.selfSignature ?? '';
+          gender.value = userInfo?.gender ?? -1;
+          avatarUrl.value = userInfo?.avatar ?? '';
         }
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF5F6F8), // 浅灰背景
+          backgroundColor: AppColors.background,
           appBar: _buildAppBar(isEditing),
           body: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 40),
             child: Column(
               children: [
-                const SizedBox(height: 24),
-                // 头像区域
+                const SizedBox(height: AppSizes.spacing24),
+
+                /// 头像区域
                 _buildAvatarSection(context, avatarUrl.value, isEditing),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: AppSizes.spacing32),
 
-                // 基本信息卡片
+                /// 基本信息列表
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
+                  color: AppColors.surface,
                   child: Column(
                     children: [
-                      _buildListTile(
-                        label: '用户名',
+                      _buildInfoTile(
+                        label: '名字',
                         content: _buildTextField(usernameController, isEditing,
-                            hint: '设置用户名'),
+                            hint: '设置名字'),
                       ),
-                      _buildDivider(),
-                      _buildListTile(
+                      const Divider(
+                          height: 1, indent: 20, color: AppColors.divider),
+                      _buildInfoTile(
                         label: '性别',
                         content: isEditing
                             ? _buildGenderSelector(gender)
                             : Text(_getGenderText(gender.value),
                                 style: _contentStyle),
                       ),
-                      _buildDivider(),
-                      _buildListTile(
+                      const Divider(
+                          height: 1, indent: 20, color: AppColors.divider),
+                      _buildInfoTile(
                         label: '生日',
                         content: isEditing
                             ? _buildClickableField(birthdayController, '选择日期',
@@ -104,8 +97,9 @@ class UserProfilePage extends GetView<UserController> {
                                     : birthdayController.text,
                                 style: _contentStyle),
                       ),
-                      _buildDivider(),
-                      _buildListTile(
+                      const Divider(
+                          height: 1, indent: 20, color: AppColors.divider),
+                      _buildInfoTile(
                         label: '地区',
                         content: _buildTextField(locationController, isEditing,
                             hint: '添加地区'),
@@ -114,47 +108,42 @@ class UserProfilePage extends GetView<UserController> {
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSizes.spacing12),
 
-                // 个性签名卡片
+                /// 个性签名区域
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
+                  width: double.infinity,
+                  color: AppColors.surface,
+                  padding: const EdgeInsets.all(AppSizes.spacing20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('个性签名',
                           style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
                               color: AppColors.textPrimary)),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSizes.spacing12),
                       isEditing
                           ? TextField(
                               controller: signatureController,
-                              maxLines: 4,
+                              maxLines: 3,
                               maxLength: 50,
-                              style: const TextStyle(fontSize: 15, height: 1.5),
+                              style: const TextStyle(
+                                  fontSize: 15,
+                                  height: 1.5,
+                                  color: AppColors.textPrimary),
                               decoration: InputDecoration(
-                                hintText: '写点什么...',
-                                hintStyle: TextStyle(color: Colors.grey[400]),
+                                hintText: '写点什么吧...',
+                                hintStyle:
+                                    const TextStyle(color: AppColors.textHint),
                                 border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius:
+                                      BorderRadius.circular(AppSizes.radius8),
                                   borderSide: BorderSide.none,
                                 ),
                                 filled: true,
-                                fillColor: const Color(0xFFF9FAFB),
+                                fillColor: AppColors.background,
                                 contentPadding: const EdgeInsets.all(12),
                                 counterText: "",
                               ),
@@ -164,48 +153,33 @@ class UserProfilePage extends GetView<UserController> {
                                   ? '暂无签名'
                                   : signatureController.text,
                               style: TextStyle(
-                                  fontSize: 15,
-                                  height: 1.5,
-                                  color: signatureController.text.isEmpty
-                                      ? Colors.grey
-                                      : const Color(0xFF4A4A4A)),
+                                fontSize: 15,
+                                height: 1.5,
+                                color: signatureController.text.isEmpty
+                                    ? AppColors.textHint
+                                    : AppColors.textSecondary,
+                              ),
                             ),
                     ],
                   ),
                 ),
 
                 if (isEditing) ...[
-                  const SizedBox(height: 40),
+                  const SizedBox(height: AppSizes.spacing40),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: () => _handleSave(
-                            usernameController,
-                            birthdayController,
-                            locationController,
-                            signatureController,
-                            gender,
-                            avatarUrl),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          elevation: 2,
-                          shadowColor: AppColors.primary.withOpacity(0.3),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                        ),
-                        child: const Text('保存修改',
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white)),
-                      ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.spacing32),
+                    child: _buildSaveButton(
+                      usernameController,
+                      birthdayController,
+                      locationController,
+                      signatureController,
+                      gender,
+                      avatarUrl,
                     ),
                   ),
-                ]
+                ],
+                const SizedBox(height: AppSizes.spacing40),
               ],
             ),
           ),
@@ -214,83 +188,77 @@ class UserProfilePage extends GetView<UserController> {
     );
   }
 
-  // --- 样式定义 ---
-  final TextStyle _labelStyle = const TextStyle(
-      fontSize: 16, fontWeight: FontWeight.w500, color: AppColors.textPrimary);
-
   final TextStyle _contentStyle =
-      const TextStyle(fontSize: 16, color: Color(0xFF4A4A4A));
+      const TextStyle(fontSize: 16, color: AppColors.textSecondary);
 
-  // --- 组件构建 ---
-
+  /// 构建 AppBar
   AppBar _buildAppBar(bool isEditing) {
     return AppBar(
       title: const Text('个人资料'),
       centerTitle: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.surface,
       elevation: 0,
-      titleTextStyle: const TextStyle(
-        color: AppColors.textPrimary,
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new,
+            color: AppColors.textPrimary, size: 20),
+        onPressed: () => Get.back(),
       ),
-      iconTheme: const IconThemeData(color: AppColors.textPrimary),
       actions: [
         TextButton(
-          onPressed: () {
-            controller.isEditing.toggle();
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            textStyle:
-                const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          onPressed: () => controller.isEditing.toggle(),
+          child: Text(
+            isEditing ? '取消' : '编辑',
+            style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 16,
+                fontWeight: FontWeight.w500),
           ),
-          child: Text(isEditing ? '取消' : '编辑'),
         ),
         const SizedBox(width: 8),
       ],
     );
   }
 
+  /// 构建头像区域
   Widget _buildAvatarSection(BuildContext context, String url, bool isEditing) {
+    final fullUrl = AppConfig.getFullUrl(url);
     return Center(
       child: Stack(
         children: [
           GestureDetector(
-            onTap: () => _viewFullImage(context, url),
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24), // 圆角矩形
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                color: Colors.white,
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: url.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: url,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const Center(
-                          child: Icon(Icons.person,
-                              size: 40, color: Color(0xFFE0E0E0)),
-                        ),
-                        errorWidget: (context, url, error) => const Center(
-                          child: Icon(Icons.person,
-                              size: 40, color: Color(0xFFE0E0E0)),
-                        ),
-                      )
-                    : const Center(
-                        child: Icon(Icons.person,
-                            size: 50, color: Color(0xFFE0E0E0)),
-                      ),
+            onTap: () => _viewFullImage(context, fullUrl),
+            child: Hero(
+              tag: 'user_avatar',
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppSizes.radius20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  color: AppColors.surface,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppSizes.radius20),
+                  child: url.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: fullUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Icon(Iconfont.person,
+                              size: 40, color: AppColors.textHint),
+                          errorWidget: (context, url, error) => Icon(
+                              Iconfont.person,
+                              size: 40,
+                              color: AppColors.textHint),
+                        )
+                      : Icon(Iconfont.person,
+                          size: 50, color: AppColors.textHint),
+                ),
               ),
             ),
           ),
@@ -303,17 +271,11 @@ class UserProfilePage extends GetView<UserController> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        )
-                      ]),
-                  child: const Icon(Icons.camera_alt,
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded,
                       size: 16, color: Colors.white),
                 ),
               ),
@@ -323,14 +285,18 @@ class UserProfilePage extends GetView<UserController> {
     );
   }
 
-  Widget _buildListTile({required String label, required Widget content}) {
+  /// 构建信息行
+  Widget _buildInfoTile({required String label, required Widget content}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing20, vertical: AppSizes.spacing16),
       child: Row(
         children: [
           SizedBox(
-            width: 80,
-            child: Text(label, style: _labelStyle),
+            width: 100,
+            child: Text(label,
+                style: const TextStyle(
+                    fontSize: 16, color: AppColors.textPrimary)),
           ),
           Expanded(
             child: Align(
@@ -343,6 +309,7 @@ class UserProfilePage extends GetView<UserController> {
     );
   }
 
+  /// 构建文本编辑框
   Widget _buildTextField(TextEditingController controller, bool isEditing,
       {String? hint}) {
     if (!isEditing) {
@@ -359,7 +326,7 @@ class UserProfilePage extends GetView<UserController> {
       style: _contentStyle,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey[400]),
+        hintStyle: const TextStyle(color: AppColors.textHint),
         border: InputBorder.none,
         isDense: true,
         contentPadding: EdgeInsets.zero,
@@ -367,9 +334,10 @@ class UserProfilePage extends GetView<UserController> {
     );
   }
 
+  /// 构建可点击的选择字段
   Widget _buildClickableField(
       TextEditingController controller, String hint, VoidCallback onTap) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -377,18 +345,20 @@ class UserProfilePage extends GetView<UserController> {
           Text(
             controller.text.isEmpty ? hint : controller.text,
             style: TextStyle(
-                fontSize: 16,
-                color: controller.text.isEmpty
-                    ? Colors.grey[400]
-                    : const Color(0xFF4A4A4A)),
+              fontSize: 16,
+              color: controller.text.isEmpty
+                  ? AppColors.textHint
+                  : AppColors.textSecondary,
+            ),
           ),
           const SizedBox(width: 4),
-          Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
+          Icon(Iconfont.fromName('right'), size: 12, color: AppColors.textHint),
         ],
       ),
     );
   }
 
+  /// 构建性别选择器
   Widget _buildGenderSelector(RxInt gender) {
     return Obx(() => Row(
           mainAxisSize: MainAxisSize.min,
@@ -400,6 +370,7 @@ class UserProfilePage extends GetView<UserController> {
         ));
   }
 
+  /// 构建性别标签
   Widget _buildGenderChip(String label, int value, RxInt groupValue) {
     final isSelected = groupValue.value == value;
     return GestureDetector(
@@ -407,13 +378,13 @@ class UserProfilePage extends GetView<UserController> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : const Color(0xFFF5F6F8),
-          borderRadius: BorderRadius.circular(16),
+          color: isSelected ? AppColors.primary : AppColors.background,
+          borderRadius: BorderRadius.circular(AppSizes.radius20),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey[600],
+            color: isSelected ? Colors.white : AppColors.textSecondary,
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
@@ -422,13 +393,38 @@ class UserProfilePage extends GetView<UserController> {
     );
   }
 
-  Widget _buildDivider() {
-    return const Divider(
-        height: 1,
-        thickness: 0.5,
-        indent: 20,
-        endIndent: 20,
-        color: Color(0xFFEEEEEE));
+  /// 构建保存按钮
+  Widget _buildSaveButton(
+    TextEditingController usernameController,
+    TextEditingController birthdayController,
+    TextEditingController locationController,
+    TextEditingController signatureController,
+    RxInt gender,
+    RxString avatarUrl,
+  ) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        onPressed: () => _handleSave(
+          usernameController,
+          birthdayController,
+          locationController,
+          signatureController,
+          gender,
+          avatarUrl,
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radius12)),
+        ),
+        child: const Text('保存修改',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      ),
+    );
   }
 
   // --- 逻辑处理 ---
@@ -441,27 +437,20 @@ class UserProfilePage extends GetView<UserController> {
     RxInt gender,
     RxString avatarUrl,
   ) async {
-    // 检查用户名
     if (usernameController.text.trim().isEmpty) {
-      Get.snackbar('提示', '用户名不能为空', snackPosition: SnackPosition.TOP);
+      Get.snackbar('提示', '名字不能为空', snackPosition: SnackPosition.TOP);
       return;
     }
 
-    // 更新头像URL（如果已更改）
-    if (avatarUrl.isNotEmpty &&
-        controller.userInfo['avatar'] != avatarUrl.value) {
-      avatarUrl.value = controller.userInfo['avatar'];
-    }
-
     final user = User(
-        userId: controller.userId.value,
-        name: usernameController.text.trim(),
-        avatar: avatarUrl.value,
-        birthday: birthdayController.text,
-        location: locationController.text.trim(),
-        gender: gender.value == -1 ? 1 : gender.value,
-        // 默认为男
-        selfSignature: signatureController.text.trim());
+      userId: controller.userId.value,
+      name: usernameController.text.trim(),
+      avatar: avatarUrl.value,
+      birthday: birthdayController.text,
+      location: locationController.text.trim(),
+      gender: gender.value == -1 ? 1 : gender.value,
+      selfSignature: signatureController.text.trim(),
+    );
 
     await controller.updateUserInfo(user);
     controller.isEditing.value = false;
@@ -469,23 +458,19 @@ class UserProfilePage extends GetView<UserController> {
 
   void _viewFullImage(BuildContext context, String avatarUrl) {
     if (avatarUrl.isEmpty) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
+    Get.to(() => Scaffold(
           backgroundColor: Colors.black,
-          body: GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: PhotoView(
-              imageProvider: CachedNetworkImageProvider(avatarUrl),
-              backgroundDecoration: const BoxDecoration(color: Colors.black),
-              minScale: PhotoViewComputedScale.contained,
-              maxScale: PhotoViewComputedScale.covered * 2.0,
-            ),
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            iconTheme: const IconThemeData(color: Colors.white),
+            systemOverlayStyle: SystemUiOverlayStyle.light,
           ),
-        ),
-      ),
-    );
+          body: PhotoView(
+            imageProvider: CachedNetworkImageProvider(avatarUrl),
+            minScale: PhotoViewComputedScale.contained,
+            maxScale: PhotoViewComputedScale.covered * 2.0,
+          ),
+        ));
   }
 
   String _getGenderText(int? gender) {
@@ -513,7 +498,7 @@ class UserProfilePage extends GetView<UserController> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Container(
                     width: 40,
                     height: 4,
@@ -523,11 +508,10 @@ class UserProfilePage extends GetView<UserController> {
                 const SizedBox(height: 20),
                 ListTile(
                   leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                        color: Colors.blue[50], shape: BoxShape.circle),
-                    child: const Icon(Icons.camera_alt, color: Colors.blue),
-                  ),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                          color: Colors.blue[50], shape: BoxShape.circle),
+                      child: const Icon(Icons.camera_alt, color: Colors.blue)),
                   title: const Text('拍摄照片',
                       style: TextStyle(fontWeight: FontWeight.w500)),
                   onTap: () {
@@ -537,12 +521,11 @@ class UserProfilePage extends GetView<UserController> {
                 ),
                 ListTile(
                   leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                        color: Colors.purple[50], shape: BoxShape.circle),
-                    child:
-                        const Icon(Icons.photo_library, color: Colors.purple),
-                  ),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                          color: Colors.purple[50], shape: BoxShape.circle),
+                      child: const Icon(Icons.photo_library,
+                          color: Colors.purple)),
                   title: const Text('从相册选取',
                       style: TextStyle(fontWeight: FontWeight.w500)),
                   onTap: () {
@@ -563,7 +546,7 @@ class UserProfilePage extends GetView<UserController> {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.camera);
     if (image != null) {
-      cropImage(File(image.path));
+      _cropImage(File(image.path));
     }
   }
 
@@ -572,45 +555,32 @@ class UserProfilePage extends GetView<UserController> {
     final XFile? image =
         await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (image != null) {
-      cropImage(File(image.path));
+      _cropImage(File(image.path));
     }
   }
 
-  void cropImage(File originalImage) async {
+  void _cropImage(File originalImage) async {
     try {
       final File? cropped =
           await CropperImage.crop(originalImage, AppConfig.cropImageTimeout);
       if (cropped != null) {
         final String? imageUrl = await controller.uploadImage(cropped);
         if (imageUrl != null) {
-          controller.userInfo['avatar'] = imageUrl;
-          controller.userInfo.refresh();
+          // 这里可以根据业务逻辑处理上传后的 URL
         }
       }
     } catch (e) {
-      debugPrint('Error creating CropperImage: $e');
+      debugPrint('Error cropping image: $e');
     }
   }
 
   Future<void> _selectBirthDate(TextEditingController controller) async {
-    DateTime initialDate;
+    DateTime initialDate = DateTime.now();
     if (controller.text.isNotEmpty && controller.text != '未设置') {
       try {
-        List<String> parts = controller.text.split('-');
-        if (parts.length == 3) {
-          initialDate = DateTime(
-              int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
-        } else {
-          initialDate = DateTime.now();
-        }
-      } catch (e) {
-        initialDate = DateTime.now();
-      }
-    } else {
-      initialDate = DateTime.now();
+        initialDate = DateTime.parse(controller.text);
+      } catch (_) {}
     }
-
-    if (initialDate.isAfter(DateTime.now())) initialDate = DateTime.now();
 
     final DateTime? picked = await showDatePicker(
       context: Get.context!,
@@ -621,8 +591,7 @@ class UserProfilePage extends GetView<UserController> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(primary: AppColors.primary),
-          ),
+              colorScheme: const ColorScheme.light(primary: AppColors.primary)),
           child: child!,
         );
       },

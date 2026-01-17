@@ -2,16 +2,24 @@ import 'package:flutter/animation.dart';
 import 'package:get/get.dart';
 
 import '../app/ui/pages/contacts/add_friend_page.dart';
+import '../app/ui/pages/contacts/friend_profile_page.dart';
 import '../app/ui/pages/contacts/friend_requests_page.dart';
-import '../app/ui/pages/friend/friend_profile_page.dart';
 import '../app/ui/pages/home/home_page.dart';
 import '../app/ui/pages/login/login_page.dart';
 import '../app/ui/pages/message/chat_info_page.dart';
 import '../app/ui/pages/message/message_page.dart';
 import '../app/ui/pages/my/my_qr_code_page.dart';
 import '../app/ui/pages/my/user_profile_page.dart';
+import '../app/ui/pages/preview/photo_preview_page.dart';
 import '../app/ui/pages/scan/scan_page.dart';
 import '../app/ui/pages/search/search_page.dart';
+import '../app/ui/pages/setting/about_page.dart';
+import '../app/ui/pages/setting/language_setting_page.dart';
+import '../app/ui/pages/setting/notification_setting_page.dart';
+import '../app/ui/pages/setting/security_setting_page.dart';
+import '../app/ui/pages/setting/setting_page.dart';
+import '../app/ui/pages/setting/storage_setting_page.dart';
+import '../app/ui/pages/setting/update_page.dart';
 import '../app/ui/pages/unknow/unknown_page.dart';
 import '../app/ui/pages/video/video_call_page.dart';
 import '../app/ui/pages/wallet/wallet_page.dart';
@@ -210,6 +218,75 @@ class AppPages {
     GetPage(
       name: Routes.WALLET_RECEIVE,
       page: () => const WalletReceivePage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+    ),
+
+    /// 图片预览页面
+    /// 使用 noTransition 配合 Hero 动画，避免过渡动画冲突
+    GetPage(
+      name: Routes.PHOTO_PREVIEW,
+      page: () => const PhotoPreviewPage(),
+      transitionDuration: Duration.zero,
+      transition: Transition.noTransition,
+    ),
+
+    /// 设置页面
+    GetPage(
+      name: Routes.SETTING,
+      page: () => const SettingPage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+      children: settingChildRoutes,
+    ),
+  ];
+
+  /// 设置子路由列表
+  static final settingChildRoutes = <GetPage>[
+    /// 账号与安全设置
+    GetPage(
+      name: '/security',
+      page: () => const SecuritySettingPage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+    ),
+
+    /// 消息通知设置
+    GetPage(
+      name: '/notification',
+      page: () => const NotificationSettingPage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+    ),
+
+    /// 多语言设置
+    GetPage(
+      name: '/language',
+      page: () => const LanguageSettingPage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+    ),
+
+    /// 存储管理设置
+    GetPage(
+      name: '/storage',
+      page: () => const StorageSettingPage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+    ),
+
+    /// 关于页面
+    GetPage(
+      name: '/about',
+      page: () => const AboutPage(),
+      transitionDuration: _defaultTransitionDuration,
+      curve: _defaultCurve,
+    ),
+
+    /// 检查更新页面
+    GetPage(
+      name: '/update',
+      page: () => const UpdatePage(),
       transitionDuration: _defaultTransitionDuration,
       curve: _defaultCurve,
     ),

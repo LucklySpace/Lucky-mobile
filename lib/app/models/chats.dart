@@ -1,5 +1,6 @@
 import 'package:floor/floor.dart';
 
+import '../../config/app_config.dart';
 import 'base_object.dart';
 import 'message_receive.dart';
 
@@ -47,6 +48,9 @@ class Chats extends BaseObject {
   /// 最后一条消息时间戳（毫秒）
   int messageTime;
 
+  /// 消息草稿
+  String? draft;
+
   Chats({
     required this.id,
     required this.chatId,
@@ -61,7 +65,10 @@ class Chats extends BaseObject {
     required this.unread,
     this.message,
     required this.messageTime,
+    this.draft,
   });
+
+  String get fullAvatar => AppConfig.getFullUrl(avatar);
 
   Map<String, dynamic> toJson() {
     return {
@@ -78,6 +85,7 @@ class Chats extends BaseObject {
       'unread': unread,
       'message': message,
       'messageTime': messageTime,
+      'draft': draft,
     };
   }
 
@@ -96,6 +104,7 @@ class Chats extends BaseObject {
       unread: _parseIntSafely(json['unread']),
       message: json['message']?.toString(),
       messageTime: json['messageTime'] != null ? json['messageTime'] as int : 0,
+      draft: json['draft']?.toString(),
     );
   }
 

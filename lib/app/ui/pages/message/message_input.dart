@@ -75,9 +75,18 @@ class _MessageInputState extends State<MessageInput> {
 
   // --- 文本监听 ---
   void _onTextChanged() {
-    final hasText = _richTextController.text.trim().isNotEmpty;
+    final text = _richTextController.text;
+    final hasText = text.trim().isNotEmpty;
     if (hasText != _hasText) {
       setState(() => _hasText = hasText);
+    }
+
+    // 更新草稿
+    final chatId = widget.controller.currentChat.value?.chatId;
+    if (chatId != null) {
+      // 如果文本为空，则清除草稿；否则保存草稿
+      final draft = text.isNotEmpty ? text : null;
+      widget.controller.session.updateDraft(chatId, draft);
     }
   }
 

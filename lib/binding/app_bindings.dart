@@ -22,6 +22,8 @@ class AppAllBinding extends Bindings {
     Get.put(NfcService(), permanent: true);
     Get.put(LocalNotificationService());
 
+    // Get.put(MessageNotificationService());
+
     Get.put(ContactController(), permanent: true);
 
     Get.put(ChatController(), permanent: true);

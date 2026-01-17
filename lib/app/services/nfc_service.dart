@@ -39,7 +39,7 @@ class NfcService extends GetxService {
     if (scanning.value) return;
     final available = await isAvailable();
     if (!available) {
-      Get.snackbar('提示', '设备不支持或未开启NFC', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('提示', '设备不支持或未开启NFC', snackPosition: SnackPosition.TOP);
       return;
     }
     scanning.value = true;
@@ -53,7 +53,7 @@ class NfcService extends GetxService {
         if (intent != null) {
           await onFound(intent);
         } else {
-          Get.snackbar('提示', '未识别到有效支付信息', snackPosition: SnackPosition.BOTTOM);
+          Get.snackbar('提示', '未识别到有效支付信息', snackPosition: SnackPosition.TOP);
         }
         await stopSession();
       },

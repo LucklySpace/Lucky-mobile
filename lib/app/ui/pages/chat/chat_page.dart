@@ -10,24 +10,9 @@ import '../../../models/chats.dart';
 import '../../widgets/chat/chat_item.dart';
 import '../../widgets/icon/icon_font.dart';
 
-/// 聊天页面，显示会话列表并支持跳转到聊天详情
-/// 特性：
-/// - 显示用户头像、用户名及 WebSocket 连接状态。
-/// - 支持搜索、创建群聊、扫一扫和添加好友功能。
-/// - 使用 [ChatItem] 显示会话，支持点击进入聊天详情。
-/// - 使用 [PopupMenuButton] 实现带箭头的弹出菜单。
+/// 聊天主页面，显示会话列表并支持跳转到聊天详情
 class ChatPage extends GetView<ChatController> {
   const ChatPage({super.key});
-
-  // 常量定义
-  static const _avatarSize = AppSizes.spacing40; // 头像尺寸
-  static const _avatarBorderRadius = AppSizes.radius8; // 头像圆角
-  static const _appBarHeight = kToolbarHeight; // AppBar 高度
-  static const _chatItemPadding = EdgeInsets.symmetric(
-    horizontal: AppSizes.spacing12,
-    vertical: AppSizes.spacing8,
-  ); // 聊天项外边距
-  static const _emptyText = '暂无聊天记录'; // 空状态提示
 
   @override
   Widget build(BuildContext context) {
@@ -38,32 +23,42 @@ class ChatPage extends GetView<ChatController> {
     );
   }
 
-  // --- UI 构建方法 ---
-
   /// 构建 AppBar，包含头像、用户名和操作按钮
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
+      backgroundColor: AppColors.surface,
+      elevation: 0,
       automaticallyImplyLeading: false,
       title: GetX<UserController>(
-        builder: (controller) {
-          final userInfo = controller.userInfo;
-          final username = userInfo['name'] ?? '未登录';
-          final avatarUrl = userInfo['avatar'] ?? '';
+        builder: (userCtrl) {
+          final userInfo = userCtrl.userInfo.value;
+          final username = userInfo?.name ?? '未登录';
+          final avatarUrl = userInfo?.avatar ?? '';
 
-          return Row(
-            children: [
-              _buildAvatar(context, username, avatarUrl),
-              _buildUserInfo(context, username),
-            ],
+          return InkWell(
+            onTap: () => Scaffold.of(context).openDrawer(),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildAvatar(avatarUrl),
+                const SizedBox(width: AppSizes.spacing12),
+                Text(
+                  username,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: AppSizes.font18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
       actions: [
         IconButton(
-          icon: Iconfont.buildIcon(
-              icon: Iconfont.search, size: AppSizes.iconMedium),
+          icon: Icon(Iconfont.search, color: AppColors.textPrimary, size: 22),
           onPressed: () => controller.openSearch(),
-          tooltip: '搜索',
         ),
         _buildPopupMenuButton(context),
         const SizedBox(width: AppSizes.spacing8),
@@ -72,134 +67,95 @@ class ChatPage extends GetView<ChatController> {
   }
 
   /// 构建头像
-  Widget _buildAvatar(BuildContext context, String username, String avatarUrl) {
-    return GestureDetector(
-      onTap: () => Scaffold.of(context).openDrawer(),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(_avatarBorderRadius),
-        child: CachedNetworkImage(
-          imageUrl: avatarUrl,
-          width: _avatarSize,
-          height: _avatarSize,
-          fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            color: AppColors.border,
-            child: Iconfont.buildIcon(
-                icon: Iconfont.person,
-                size: AppSizes.iconMedium,
-                color: AppColors.textHint),
-          ),
-          errorWidget: (context, url, error) {
-            debugPrint('加载头像失败: $error');
-            return Container(
-              color: AppColors.border,
-              child: Iconfont.buildIcon(
-                  icon: Iconfont.person,
-                  size: AppSizes.iconMedium,
-                  color: AppColors.textHint),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  /// 构建用户名和连接状态
-  Widget _buildUserInfo(BuildContext context, String username) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.only(left: AppSizes.spacing12),
-        child: Text(
-          username,
-          style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold) ??
-              const TextStyle(
-                  fontSize: AppSizes.font20, fontWeight: FontWeight.bold),
-        ),
-      ),
+  Widget _buildAvatar(String avatarUrl) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppSizes.radius8),
+      child: avatarUrl.isNotEmpty
+          ? CachedNetworkImage(
+              imageUrl: avatarUrl,
+              width: 36,
+              height: 36,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                color: AppColors.background,
+                child:
+                    Icon(Iconfont.person, size: 20, color: AppColors.textHint),
+              ),
+              errorWidget: (context, url, error) => Container(
+                color: AppColors.background,
+                child:
+                    Icon(Iconfont.person, size: 20, color: AppColors.textHint),
+              ),
+            )
+          : Container(
+              width: 36,
+              height: 36,
+              color: AppColors.background,
+              child: Icon(Iconfont.person, size: 20, color: AppColors.textHint),
+            ),
     );
   }
 
   /// 构建弹出菜单按钮
   Widget _buildPopupMenuButton(BuildContext context) {
     return PopupMenuButton<String>(
-      icon: Iconfont.buildIcon(icon: Iconfont.add, size: AppSizes.iconLarge),
+      icon: Icon(Iconfont.add, color: AppColors.textPrimary, size: 26),
       tooltip: '更多操作',
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(AppSizes.radius8)),
+      elevation: 3,
+      position: PopupMenuPosition.under,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radius8),
       ),
-      offset: const Offset(0, kToolbarHeight),
-      itemBuilder: (context) => _buildMenuItems(),
+      itemBuilder: (context) => [
+        _buildPopupItem('create_group', Iconfont.add, '创建群聊'),
+        _buildPopupItem('scan', Iconfont.scan, '扫一扫'),
+        _buildPopupItem('add_friend', Iconfont.addFriend, '加好友/群'),
+      ],
       onSelected: controller.onMenuSelected,
     );
   }
 
-  /// 构建弹出菜单项
-  List<PopupMenuItem<String>> _buildMenuItems() {
-    return [
-      PopupMenuItem<String>(
-        value: 'create_group',
-        child: Row(
-          children: [
-            Iconfont.buildIcon(
-                icon: Iconfont.add,
-                size: AppSizes.font20,
-                color: AppColors.textSecondary),
-            const SizedBox(width: AppSizes.spacing12),
-            const Text('创建群聊'),
-          ],
-        ),
+  /// 构建单个弹出菜单项
+  PopupMenuItem<String> _buildPopupItem(
+      String value, IconData icon, String text) {
+    return PopupMenuItem<String>(
+      value: value,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 20, color: AppColors.textPrimary),
+          const SizedBox(width: AppSizes.spacing12),
+          Text(text, style: const TextStyle(fontSize: AppSizes.font15)),
+        ],
       ),
-      PopupMenuItem<String>(
-        value: 'scan',
-        child: Row(
-          children: [
-            Iconfont.buildIcon(
-                icon: Iconfont.scan,
-                size: AppSizes.font20,
-                color: AppColors.textSecondary),
-            const SizedBox(width: AppSizes.spacing12),
-            const Text('扫一扫'),
-          ],
-        ),
-      ),
-      PopupMenuItem<String>(
-        value: 'add_friend',
-        child: Row(
-          children: [
-            Iconfont.buildIcon(
-                icon: Iconfont.addFriend,
-                size: AppSizes.font20,
-                color: AppColors.textSecondary),
-            const SizedBox(width: AppSizes.spacing12),
-            const Text('加好友/群'),
-          ],
-        ),
-      ),
-    ];
+    );
   }
 
   /// 构建聊天列表
   Widget _buildChatList(BuildContext context, List<Chats> chatList) {
     if (chatList.isEmpty) {
-      return _buildEmptyState(context);
+      return _buildEmptyState();
     }
 
-    return ListView.builder(
-      cacheExtent: 1000, // 缓存 1000 像素，优化滚动性能
+    return ListView.separated(
+      physics: const BouncingScrollPhysics(),
       itemCount: chatList.length,
+      separatorBuilder: (context, index) => const Divider(
+        height: 1,
+        indent: 72,
+        color: AppColors.divider,
+      ),
       itemBuilder: (context, index) {
         final chat = chatList[index];
-        return GestureDetector(
+        return InkWell(
           onTap: () => controller.changeCurrentChat(chat),
           child: Container(
             color: AppColors.surface,
-            child: Padding(
-              padding: _chatItemPadding,
-              child: ChatItem(chats: chat),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSizes.spacing12,
+              vertical: AppSizes.spacing4,
             ),
+            child: ChatItem(chats: chat),
           ),
         );
       },
@@ -207,16 +163,22 @@ class ChatPage extends GetView<ChatController> {
   }
 
   /// 构建空状态提示
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState() {
     return Center(
-      child: Text(
-        _emptyText,
-        style: Theme.of(context)
-                .textTheme
-                .bodyLarge
-                ?.copyWith(color: AppColors.textSecondary) ??
-            const TextStyle(
-                fontSize: AppSizes.font16, color: AppColors.textSecondary),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Iconfont.fromName('liaotian'),
+              size: 80, color: AppColors.textHint.withOpacity(0.3)),
+          const SizedBox(height: AppSizes.spacing16),
+          const Text(
+            '暂无聊天记录',
+            style: TextStyle(
+              fontSize: AppSizes.font16,
+              color: AppColors.textHint,
+            ),
+          ),
+        ],
       ),
     );
   }

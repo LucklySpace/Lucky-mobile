@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
+import '../../../controller/chat_controller.dart';
 import '../../../models/message_receive.dart';
 import '../icon/icon_font.dart';
 
@@ -49,7 +50,8 @@ class ImageBubble extends StatelessWidget {
                 const SizedBox(height: AppSizes.spacing4),
                 GestureDetector(
                   onTap: () {
-                    // 点击查看大图
+                    final controller = Get.find<ChatController>();
+                    controller.previewImage(_buildMessageUrl(message));
                   },
                   child: Container(
                     constraints: const BoxConstraints(
@@ -68,15 +70,33 @@ class ImageBubble extends StatelessWidget {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(AppSizes.radius12),
-                      child: CachedNetworkImage(
-                        imageUrl: _buildMessageUrl(message),
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                        errorWidget: (context, url, error) => const Icon(
-                          Icons.error,
-                          color: AppColors.error,
+                      child: Hero(
+                        tag: _buildMessageUrl(message),
+                        flightShuttleBuilder: (flightContext, animation,
+                            direction, fromContext, toContext) {
+                          // 自定义 Hero 动画过渡效果
+                          return AnimatedBuilder(
+                            animation: animation,
+                            builder: (context, child) {
+                              return Opacity(
+                                opacity:
+                                    Curves.easeInOut.transform(animation.value),
+                                child: child,
+                              );
+                            },
+                            child: fromContext.widget,
+                          );
+                        },
+                        child: CachedNetworkImage(
+                          imageUrl: _buildMessageUrl(message),
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.error,
+                            color: AppColors.error,
+                          ),
                         ),
                       ),
                     ),

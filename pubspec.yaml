@@ -27,7 +27,6 @@ dependencies:
   # 状态管理与依赖注入
   get: ^4.6.6 # GetX：状态管理、路由、依赖注入
   get_it: ^8.0.3 # 服务定位器：依赖注入
-  provider: ^6.0.5 # 状态管理：Provider 模式
 
   # 网络与通信
   dio: ^5.3.2 # HTTP 客户端：网络请求封装

@@ -102,7 +102,7 @@ class _$AppDatabase extends AppDatabase {
       },
       onCreate: (database, version) async {
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `chats` (`chatId` TEXT NOT NULL, `id` TEXT NOT NULL, `chatType` INTEGER NOT NULL, `ownerId` TEXT NOT NULL, `toId` TEXT NOT NULL, `isMute` INTEGER NOT NULL, `isTop` INTEGER NOT NULL, `sequence` INTEGER NOT NULL, `name` TEXT NOT NULL, `avatar` TEXT NOT NULL, `unread` INTEGER NOT NULL, `message` TEXT, `messageTime` INTEGER NOT NULL, PRIMARY KEY (`chatId`))');
+            'CREATE TABLE IF NOT EXISTS `chats` (`chatId` TEXT NOT NULL, `id` TEXT NOT NULL, `chatType` INTEGER NOT NULL, `ownerId` TEXT NOT NULL, `toId` TEXT NOT NULL, `isMute` INTEGER NOT NULL, `isTop` INTEGER NOT NULL, `sequence` INTEGER NOT NULL, `name` TEXT NOT NULL, `avatar` TEXT NOT NULL, `unread` INTEGER NOT NULL, `message` TEXT, `messageTime` INTEGER NOT NULL, `draft` TEXT, PRIMARY KEY (`chatId`))');
         await database.execute(
             'CREATE TABLE IF NOT EXISTS `friend` (`userId` TEXT, `friendId` TEXT, `name` TEXT, `alias` TEXT, `avatar` TEXT, `gender` INTEGER, `location` TEXT, `black` INTEGER, `flag` INTEGER, `birthday` TEXT, `selfSignature` TEXT, `sequence` INTEGER, PRIMARY KEY (`userId`, `friendId`))');
         await database.execute(
@@ -164,7 +164,8 @@ class _$ChatsDao extends ChatsDao {
                   'avatar': item.avatar,
                   'unread': item.unread,
                   'message': item.message,
-                  'messageTime': item.messageTime
+                  'messageTime': item.messageTime,
+                  'draft': item.draft
                 }),
         _chatsUpdateAdapter = UpdateAdapter(
             database,
@@ -183,7 +184,8 @@ class _$ChatsDao extends ChatsDao {
                   'avatar': item.avatar,
                   'unread': item.unread,
                   'message': item.message,
-                  'messageTime': item.messageTime
+                  'messageTime': item.messageTime,
+                  'draft': item.draft
                 });
 
   final sqflite.DatabaseExecutor database;
@@ -212,7 +214,8 @@ class _$ChatsDao extends ChatsDao {
             avatar: row['avatar'] as String,
             unread: row['unread'] as int,
             message: row['message'] as String?,
-            messageTime: row['messageTime'] as int),
+            messageTime: row['messageTime'] as int,
+            draft: row['draft'] as String?),
         arguments: [ownerId]);
   }
 
@@ -232,7 +235,8 @@ class _$ChatsDao extends ChatsDao {
             avatar: row['avatar'] as String,
             unread: row['unread'] as int,
             message: row['message'] as String?,
-            messageTime: row['messageTime'] as int),
+            messageTime: row['messageTime'] as int,
+            draft: row['draft'] as String?),
         arguments: [id]);
   }
 
@@ -243,8 +247,19 @@ class _$ChatsDao extends ChatsDao {
   ) async {
     return _queryAdapter.queryList(
         'SELECT * FROM Chats WHERE (ownerId = ?1 and toId = ?2) or (ownerId = ?2 and toId = ?1)',
-        mapper: (Map<String, Object?> row) => Chats(id: row['id'] as String, chatId: row['chatId'] as String, chatType: row['chatType'] as int, ownerId: row['ownerId'] as String, toId: row['toId'] as String, isMute: row['isMute'] as int, isTop: row['isTop'] as int, sequence: row['sequence'] as int, name: row['name'] as String, avatar: row['avatar'] as String, unread: row['unread'] as int, message: row['message'] as String?, messageTime: row['messageTime'] as int),
+        mapper: (Map<String, Object?> row) => Chats(id: row['id'] as String, chatId: row['chatId'] as String, chatType: row['chatType'] as int, ownerId: row['ownerId'] as String, toId: row['toId'] as String, isMute: row['isMute'] as int, isTop: row['isTop'] as int, sequence: row['sequence'] as int, name: row['name'] as String, avatar: row['avatar'] as String, unread: row['unread'] as int, message: row['message'] as String?, messageTime: row['messageTime'] as int, draft: row['draft'] as String?),
         arguments: [ownerId, toId]);
+  }
+
+  @override
+  Future<List<Chats>> searchGroupChats(
+    String ownerId,
+    String keyword,
+  ) async {
+    return _queryAdapter.queryList(
+        'SELECT * FROM Chats      WHERE ownerId = ?1      AND chatType = 1001     AND name LIKE \'%\' || ?2 || \'%\'',
+        mapper: (Map<String, Object?> row) => Chats(id: row['id'] as String, chatId: row['chatId'] as String, chatType: row['chatType'] as int, ownerId: row['ownerId'] as String, toId: row['toId'] as String, isMute: row['isMute'] as int, isTop: row['isTop'] as int, sequence: row['sequence'] as int, name: row['name'] as String, avatar: row['avatar'] as String, unread: row['unread'] as int, message: row['message'] as String?, messageTime: row['messageTime'] as int, draft: row['draft'] as String?),
+        arguments: [ownerId, keyword]);
   }
 
   @override
@@ -257,7 +272,7 @@ class _$ChatsDao extends ChatsDao {
   Future<Chats?> getLastChat(String ownerId) async {
     return _queryAdapter.query(
         'SELECT * FROM Chats WHERE ownerId =?1 ORDER BY messageTime DESC LIMIT 1',
-        mapper: (Map<String, Object?> row) => Chats(id: row['id'] as String, chatId: row['chatId'] as String, chatType: row['chatType'] as int, ownerId: row['ownerId'] as String, toId: row['toId'] as String, isMute: row['isMute'] as int, isTop: row['isTop'] as int, sequence: row['sequence'] as int, name: row['name'] as String, avatar: row['avatar'] as String, unread: row['unread'] as int, message: row['message'] as String?, messageTime: row['messageTime'] as int),
+        mapper: (Map<String, Object?> row) => Chats(id: row['id'] as String, chatId: row['chatId'] as String, chatType: row['chatType'] as int, ownerId: row['ownerId'] as String, toId: row['toId'] as String, isMute: row['isMute'] as int, isTop: row['isTop'] as int, sequence: row['sequence'] as int, name: row['name'] as String, avatar: row['avatar'] as String, unread: row['unread'] as int, message: row['message'] as String?, messageTime: row['messageTime'] as int, draft: row['draft'] as String?),
         arguments: [ownerId]);
   }
 
@@ -331,9 +346,9 @@ class _$FriendDao extends FriendDao {
     return _queryAdapter.query(
         'SELECT * FROM Friend WHERE userId=?1 AND friendId =?2',
         mapper: (Map<String, Object?> row) => Friend(
-            userId: row['userId'] as String?,
-            friendId: row['friendId'] as String?,
-            name: row['name'] as String?,
+            userId: row['userId'] as String,
+            friendId: row['friendId'] as String,
+            name: row['name'] as String,
             alias: row['alias'] as String?,
             avatar: row['avatar'] as String?,
             gender: row['gender'] as int?,
@@ -350,9 +365,9 @@ class _$FriendDao extends FriendDao {
   Future<List<Friend>?> list(String userId) async {
     return _queryAdapter.queryList('SELECT * FROM Friend WHERE userId=?1',
         mapper: (Map<String, Object?> row) => Friend(
-            userId: row['userId'] as String?,
-            friendId: row['friendId'] as String?,
-            name: row['name'] as String?,
+            userId: row['userId'] as String,
+            friendId: row['friendId'] as String,
+            name: row['name'] as String,
             alias: row['alias'] as String?,
             avatar: row['avatar'] as String?,
             gender: row['gender'] as int?,
@@ -373,6 +388,17 @@ class _$FriendDao extends FriendDao {
     await _queryAdapter.queryNoReturn(
         'DELETE FROM Friend WHERE userId =?1 AND friendId =?2',
         arguments: [userId, friendId]);
+  }
+
+  @override
+  Future<List<Friend>> searchFriends(
+    String userId,
+    String keyword,
+  ) async {
+    return _queryAdapter.queryList(
+        'SELECT * FROM Friend      WHERE userId = ?1      AND (name LIKE \'%\' || ?2 || \'%\' OR friendId LIKE \'%\' || ?2 || \'%\')',
+        mapper: (Map<String, Object?> row) => Friend(userId: row['userId'] as String, friendId: row['friendId'] as String, name: row['name'] as String, alias: row['alias'] as String?, avatar: row['avatar'] as String?, gender: row['gender'] as int?, location: row['location'] as String?, black: row['black'] as int?, flag: row['flag'] as int?, birthday: row['birthday'] as String?, selfSignature: row['selfSignature'] as String?, sequence: row['sequence'] as int?),
+        arguments: [userId, keyword]);
   }
 
   @override

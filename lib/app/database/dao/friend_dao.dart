@@ -19,6 +19,13 @@ abstract class FriendDao {
   @Query('DELETE FROM Friend WHERE userId =:userId AND friendId =:friendId')
   Future<void> deleteFriend(String userId, String friendId);
 
+  @Query('''
+    SELECT * FROM Friend 
+    WHERE userId = :userId 
+    AND (name LIKE '%' || :keyword || '%' OR friendId LIKE '%' || :keyword || '%')
+  ''')
+  Future<List<Friend>> searchFriends(String userId, String keyword);
+
   @Query('SELECT IFNULL(MAX(sequence), 0) FROM Friend WHERE userId = :userId')
   Future<int?> getMaxSequence(String userId);
 

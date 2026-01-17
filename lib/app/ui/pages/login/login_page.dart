@@ -1,46 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_im/constants/app_colors.dart';
-import 'package:flutter_im/constants/app_sizes.dart';
 import 'package:get/get.dart';
 
+import '../../../../constants/app_colors.dart';
+import '../../../../constants/app_sizes.dart';
 import '../../../controller/login_controller.dart';
+import '../../widgets/icon/icon_font.dart';
 
+/// 登录页面
+///
+/// 支持账号密码登录和手机验证码登录两种模式。
+/// 页面设计追求简洁、大方，与应用整体风格保持一致。
 class LoginPage extends GetView<LoginController> {
   const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        // color: Colors.white,
+      backgroundColor: AppColors.surface, // 使用纯白底色，显得干净
+      body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSizes.spacing24,
-              MediaQuery.of(context).size.height * 0.15,
-              AppSizes.spacing24,
-              AppSizes.spacing24,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing32),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _buildLogo(context),
-                const SizedBox(height: AppSizes.spacing40),
+                SizedBox(height: MediaQuery.of(context).size.height * 0.1),
+
+                /// Logo 与欢迎语
+                _buildHeader(),
+
+                const SizedBox(height: AppSizes.spacing48),
+
+                /// 登录表单切换区域
                 SizedBox(
-                  height: 300,
+                  height: 320, // 稍微增加高度以容纳更多内容
                   child: TabBarView(
                     controller: controller.tabController,
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
-                      _buildLoginForm(context, true),
-                      _buildLoginForm(context, false),
+                      _buildLoginForm(context, isPasswordMode: true),
+                      _buildLoginForm(context, isPasswordMode: false),
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSizes.spacing16),
-                _buildSwitchAuthTypeRow(context),
+
+                const SizedBox(height: AppSizes.spacing12),
+
+                /// 切换登录方式与注册引导
+                _buildFooter(context),
               ],
             ),
           ),
@@ -50,258 +58,249 @@ class LoginPage extends GetView<LoginController> {
     );
   }
 
-  Widget _buildLogo(BuildContext context) {
-    // 统一大小与圆角
-    const double avatarSize = AppSizes.spacing80;
-    const double borderRadius = AppSizes.radius12;
-
+  /// 构建头部 Logo 与欢迎信息
+  Widget _buildHeader() {
     return Column(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: Image.asset(
-            'assets/logo/app_icon.png',
-            width: avatarSize,
-            height: avatarSize,
-            fit: BoxFit.cover,
+        Container(
+          padding: const EdgeInsets.all(AppSizes.spacing4),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(AppSizes.radius20),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppSizes.radius16),
+            child: Image.asset(
+              'assets/logo/app_icon.png',
+              width: 88,
+              height: 88,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
-        const SizedBox(height: AppSizes.spacing16),
+        const SizedBox(height: AppSizes.spacing24),
         const Text(
-          '欢迎登录',
+          '欢迎登录 Lucky',
           style: TextStyle(
-            fontSize: AppSizes.font22,
-            fontWeight: FontWeight.w500,
+            fontSize: AppSizes.font24,
+            fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
+            letterSpacing: 1.2,
           ),
         ),
+        const SizedBox(height: AppSizes.spacing8),
       ],
     );
   }
 
-  Widget _buildSwitchAuthTypeRow(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+  /// 构建登录表单
+  Widget _buildLoginForm(BuildContext context, {required bool isPasswordMode}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          controller.currentAuthType == AuthType.password ? '还没有账号？' : '已有账号？',
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: AppSizes.font14,
-          ),
+        /// 账号/手机号输入框
+        _buildInputField(
+          controller: controller.principalController,
+          hintText: isPasswordMode ? '请输入账号' : '请输入手机号',
+          icon: isPasswordMode
+              ? Iconfont.fromName('User')
+              : Iconfont.fromName('shouji'),
+          keyboardType:
+              isPasswordMode ? TextInputType.text : TextInputType.phone,
+          inputFormatters: isPasswordMode
+              ? [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                  FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                ]
+              : null,
         ),
-        TextButton(
-          onPressed: () {
-            controller.tabController.animateTo(
-              controller.currentAuthType == AuthType.password ? 1 : 0,
-            );
-          },
-          child: Text(
-            controller.currentAuthType == AuthType.password
-                ? '验证码登录'
-                : '账号密码登录',
+        const SizedBox(height: AppSizes.spacing20),
+
+        /// 密码/验证码输入框
+        _buildInputField(
+          controller: controller.credentialsController,
+          hintText: isPasswordMode ? '请输入密码' : '请输入验证码',
+          icon: isPasswordMode
+              ? Iconfont.fromName('shezhix')
+              : Iconfont.fromName('tixing'),
+          obscureText: isPasswordMode,
+          keyboardType:
+              isPasswordMode ? TextInputType.text : TextInputType.number,
+          suffixIcon: !isPasswordMode ? _buildVerifyCodeBtn(context) : null,
+        ),
+
+        if (isPasswordMode) ...[
+          const SizedBox(height: AppSizes.spacing12),
+          _buildRememberMe(),
+        ],
+
+        const SizedBox(height: AppSizes.spacing32),
+
+        /// 登录按钮
+        _buildSubmitButton(context),
+      ],
+    );
+  }
+
+  /// 通用输入框构建
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String hintText,
+    required IconData icon,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppSizes.radius12),
+        border: Border.all(color: AppColors.divider.withOpacity(0.5)),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
+        style: const TextStyle(
+            fontSize: AppSizes.font16, color: AppColors.textPrimary),
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: const TextStyle(
+              color: AppColors.textHint, fontSize: AppSizes.font14),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+            child: Icon(icon, size: 20, color: AppColors.primary),
+          ),
+          prefixIconConstraints: const BoxConstraints(minWidth: 52),
+          suffixIcon: suffixIcon,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  /// 记住密码勾选框
+  Widget _buildRememberMe() {
+    return Row(
+      children: [
+        Obx(() => SizedBox(
+              width: 24,
+              height: 24,
+              child: Checkbox(
+                value: controller.rememberCredentials.value,
+                onChanged: (value) =>
+                    controller.rememberCredentials.value = value ?? false,
+                activeColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4)),
+                side: const BorderSide(color: AppColors.textHint, width: 1.5),
+              ),
+            )),
+        const SizedBox(width: AppSizes.spacing8),
+        GestureDetector(
+          onTap: () => controller.rememberCredentials.toggle(),
+          child: const Text(
+            '记住密码',
             style: TextStyle(
-              color: AppColors.primary,
-              fontSize: AppSizes.font14,
-              fontWeight: FontWeight.w500,
-            ),
+                color: AppColors.textSecondary, fontSize: AppSizes.font13),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildLoginForm(BuildContext context, bool isPasswordMode) {
-    return Container(
-      padding: const EdgeInsets.all(AppSizes.spacing20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radius8),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            controller: controller.principalController,
-            decoration: InputDecoration(
-              labelText: isPasswordMode ? '账号' : '手机号',
-              labelStyle: const TextStyle(color: AppColors.textHint),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radius4),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radius4),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radius4),
-                borderSide: BorderSide(color: AppColors.primary, width: 1.5),
-              ),
-              prefixIcon: Icon(
-                isPasswordMode ? Icons.person_outline : Icons.phone_outlined,
-                color: AppColors.primary,
-                size: AppSizes.spacing20,
-              ),
-              filled: true,
-              fillColor: AppColors.inputBackground,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.spacing16, vertical: AppSizes.spacing16),
+  /// 发送验证码按钮
+  Widget _buildVerifyCodeBtn(BuildContext context) {
+    return Obx(() => TextButton(
+          onPressed: controller.canSendCode.value
+              ? controller.sendVerificationCode
+              : null,
+          child: Text(
+            controller.canSendCode.value
+                ? '发送验证码'
+                : '${controller.countDown}s 后重发',
+            style: TextStyle(
+              fontSize: AppSizes.font13,
+              fontWeight: FontWeight.w600,
+              color: controller.canSendCode.value
+                  ? AppColors.primary
+                  : AppColors.textDisabled,
             ),
-            keyboardType:
-                isPasswordMode ? TextInputType.text : TextInputType.phone,
-            textInputAction: TextInputAction.next,
-            inputFormatters: isPasswordMode
-                ? [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-                    FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                  ]
-                : null,
           ),
-          const SizedBox(height: AppSizes.spacing16),
-          TextField(
-            controller: controller.credentialsController,
-            decoration: InputDecoration(
-              labelText: isPasswordMode ? '密码' : '验证码',
-              labelStyle: const TextStyle(color: AppColors.textHint),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radius4),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radius4),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radius4),
-                borderSide: BorderSide(color: AppColors.primary, width: 1.5),
-              ),
-              prefixIcon: Icon(
-                isPasswordMode ? Icons.lock_outline : Icons.security_outlined,
-                color: AppColors.primary,
-                size: AppSizes.spacing20,
-              ),
-              filled: true,
-              fillColor: AppColors.inputBackground,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.spacing16, vertical: AppSizes.spacing16),
-              suffixIcon: !isPasswordMode
-                  ? Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Obx(() => TextButton(
-                            onPressed: controller.canSendCode.value
-                                ? controller.sendVerificationCode
-                                : null,
-                            style: TextButton.styleFrom(
-                              foregroundColor:
-                                  Theme.of(context).colorScheme.primary,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSizes.spacing8),
-                              minimumSize: const Size(0, 30),
-                            ),
-                            child: Text(
-                              controller.canSendCode.value
-                                  ? '发送验证码'
-                                  : '${controller.countDown}s',
-                              style: TextStyle(
-                                fontSize: AppSizes.font12 + 1, // 13
-                                color: controller.canSendCode.value
-                                    ? Theme.of(context).colorScheme.primary
-                                    : AppColors.textDisabled,
-                              ),
-                            ),
-                          )),
-                    )
-                  : null,
+        ));
+  }
+
+  /// 提交按钮
+  Widget _buildSubmitButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: Obx(() => ElevatedButton(
+            onPressed:
+                controller.isLoading.value ? null : controller.handleLogin,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radius12)),
+              disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
             ),
-            obscureText: isPasswordMode,
-            keyboardType:
-                isPasswordMode ? TextInputType.text : TextInputType.number,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => controller.handleLogin(),
-          ),
-          if (isPasswordMode) ...[
-            const SizedBox(height: AppSizes.spacing12),
-            Row(
-              children: [
-                Obx(() => Checkbox(
-                      value: controller.rememberCredentials.value,
-                      onChanged: (value) {
-                        controller.rememberCredentials.value = value ?? false;
-                      },
-                      activeColor: Theme.of(context).colorScheme.primary,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity:
-                          const VisualDensity(horizontal: -4, vertical: -4),
-                    )),
-                GestureDetector(
-                  onTap: () {
-                    controller.rememberCredentials.value =
-                        !controller.rememberCredentials.value;
-                  },
-                  child: const Text(
-                    '记住密码',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: AppSizes.font14,
+            child: controller.isLoading.value
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
+                  )
+                : const Text(
+                    '登 录',
+                    style: TextStyle(
+                        fontSize: AppSizes.font18, fontWeight: FontWeight.bold),
+                  ),
+          )),
+    );
+  }
+
+  /// 底部引导与切换
+  Widget _buildFooter(BuildContext context) {
+    return Obx(() {
+      // 显式使用 .value 以确保 GetX 能够监听到变化
+      final isPasswordMode = controller.activeTabIndex.value == 0;
+      return Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                isPasswordMode ? '还没有账号？' : '已有账号？',
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: AppSizes.font14),
+              ),
+              TextButton(
+                onPressed: () {
+                  controller.tabController.animateTo(isPasswordMode ? 1 : 0);
+                },
+                child: Text(
+                  isPasswordMode ? '验证码登录' : '账号密码登录',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: AppSizes.font14,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ],
-            ),
-          ],
-          const SizedBox(height: AppSizes.spacing24),
-          SizedBox(
-            width: double.infinity,
-            child: Obx(() => ElevatedButton(
-                  onPressed: controller.isLoading.value
-                      ? null
-                      : controller.handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: AppSizes.spacing14),
-                    // 14
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radius4),
-                    ),
-                    foregroundColor: AppColors.white,
-                    disabledBackgroundColor: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withOpacity(0.5), // approximate disabled color
-                  ),
-                  child: controller.isLoading.value
-                      ? const SizedBox(
-                          height: AppSizes.spacing20,
-                          width: AppSizes.spacing20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: AppSizes.spacing2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(AppColors.white),
-                          ),
-                        )
-                      : const Text(
-                          '登录',
-                          style: TextStyle(
-                            fontSize: AppSizes.font16,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.white,
-                          ),
-                        ),
-                )),
+              ),
+            ],
           ),
+          const SizedBox(height: AppSizes.spacing32),
+          // 这里可以预留第三方登录入口等
         ],
-      ),
-    );
+      );
+    });
   }
 }

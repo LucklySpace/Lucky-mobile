@@ -96,6 +96,12 @@ class AppConstants {
 
   // ==================== 缓存Key常量 ====================
 
+  ///
+  static const String heartbeat = 'heartbeat';
+
+  /// 心跳
+  static const String registrar = 'registrar';
+
   /// 用户信息缓存Key
   static const String cacheKeyUserInfo = 'user_info';
 
@@ -110,6 +116,21 @@ class AppConstants {
 
   /// 用户ID缓存Key
   static const String cacheKeyUserId = 'userId';
+
+  // ==================== 通知设置缓存Key ====================
+
+  /// 启用消息通知
+  static const String cacheKeyNotificationEnable = 'notification_enable';
+
+  /// 显示消息预览
+  static const String cacheKeyNotificationShowPreview =
+      'notification_show_preview';
+
+  /// 声音提醒
+  static const String cacheKeyNotificationSound = 'notification_sound';
+
+  /// 振动提醒
+  static const String cacheKeyNotificationVibrate = 'notification_vibrate';
 
   // ==================== 正则表达式常量 ====================
 

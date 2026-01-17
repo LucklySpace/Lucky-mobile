@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -5,66 +6,103 @@ import '../../../../constants/app_colors.dart';
 import '../../../../constants/app_sizes.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../../utils/i18n_util.dart';
+import '../../../controller/chat_controller.dart';
+import '../../../controller/search_controller.dart' as search_ctrl;
+import '../../../models/chats.dart';
+import '../../../models/friend.dart';
+import '../../../models/search_message_result.dart';
+import '../../widgets/icon/icon_font.dart';
 
 /// 搜索页面
 ///
-/// 提供聊天记录搜索功能，支持实时搜索、历史记录展示和结果列表。
-/// 使用 GetX 响应式状态管理，自动处理加载、结果和空状态。
-/// 搜索框支持自动焦点，历史标签可点击填充并搜索。
-class SearchPage extends GetView<SearchController> {
+/// 提供全局搜索功能，支持搜索联系人、群组和聊天记录。
+/// 模仿微信搜索体验：
+/// - 实时搜索及关键词高亮
+/// - 分类展示结果
+/// - 历史记录管理
+class SearchPage extends GetView<search_ctrl.SearchController> {
   const SearchPage({super.key});
 
-  /// 构建搜索页面 UI
   @override
   Widget build(BuildContext context) {
     final searchTextController = TextEditingController();
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: _buildAppBar(searchTextController),
-      body: _buildBody(searchTextController),
-    );
-  }
 
-  /// 构建顶部 AppBar，包含搜索框和取消按钮
-  PreferredSizeWidget _buildAppBar(TextEditingController searchTextController) {
-    return AppBar(
-      automaticallyImplyLeading: false,
-      title: Row(
-        children: [
-          Expanded(child: _buildSearchField(searchTextController)),
-          _buildCancelButton(),
-        ],
+    // 同步搜索关键字到输入框
+    ever(controller.currentKeyword, (String keyword) {
+      if (searchTextController.text != keyword) {
+        searchTextController.text = keyword;
+        searchTextController.selection = TextSelection.fromPosition(
+          TextPosition(offset: keyword.length),
+        );
+      }
+    });
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: _buildAppBar(searchTextController),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: _buildBody(searchTextController),
       ),
     );
   }
 
-  /// 构建搜索输入框，支持自动焦点和提交搜索
+  /// 构建顶部 AppBar
+  PreferredSizeWidget _buildAppBar(TextEditingController searchTextController) {
+    return AppBar(
+      backgroundColor: AppColors.surface,
+      elevation: 0,
+      automaticallyImplyLeading: false,
+      titleSpacing: 0,
+      title: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing12),
+        child: Row(
+          children: [
+            Expanded(child: _buildSearchField(searchTextController)),
+            _buildCancelButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 构建搜索输入框
   Widget _buildSearchField(TextEditingController searchTextController) {
     return Container(
-      height: AppSizes.spacing32,
+      height: 38,
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSizes.radius4),
-        border: Border.all(color: AppColors.border, width: AppSizes.spacing1),
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(AppSizes.radius8),
       ),
       child: TextField(
         controller: searchTextController,
         autofocus: true,
         textAlignVertical: TextAlignVertical.center,
+        onChanged: (value) => controller.performSearch(value),
+        onSubmitted: (value) => controller.searchNow(value),
+        textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-          hintText: I18n.t('search.chat_records'),
-          hintStyle: const TextStyle(color: AppColors.textHint),
+          hintText: I18n.t('search.placeholder'),
+          hintStyle: const TextStyle(
+              color: AppColors.textHint, fontSize: AppSizes.font14),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.spacing8, vertical: 0),
           isDense: true,
-          prefixIcon: const Icon(Icons.search,
-              color: AppColors.textHint, size: AppSizes.font18),
-          prefixIconConstraints: const BoxConstraints(
-              minWidth: AppSizes.spacing40, minHeight: AppSizes.spacing32),
+          prefixIcon:
+              Icon(Iconfont.search, color: AppColors.textHint, size: 18),
+          prefixIconConstraints: const BoxConstraints(minWidth: 40),
+          suffixIcon: Obx(() => controller.currentKeyword.isEmpty
+              ? const SizedBox()
+              : IconButton(
+                  icon: const Icon(Icons.cancel,
+                      color: AppColors.textHint, size: 18),
+                  onPressed: () {
+                    searchTextController.clear();
+                    controller.clearResults();
+                  },
+                )),
         ),
-        style: const TextStyle(fontSize: AppSizes.font16),
-        //onSubmitted: controller.performSearch,
+        style: const TextStyle(
+            fontSize: AppSizes.font16, color: AppColors.textPrimary),
       ),
     );
   }
@@ -72,146 +110,341 @@ class SearchPage extends GetView<SearchController> {
   /// 构建取消按钮
   Widget _buildCancelButton() {
     return TextButton(
-      onPressed: () => Get.toNamed('${Routes.HOME}'),
-      style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.spacing8)),
-      child: Text(I18n.t('cancel')),
+      onPressed: () => Get.back(),
+      child: Text(
+        I18n.t('cancel'),
+        style: const TextStyle(
+            color: AppColors.primary,
+            fontSize: AppSizes.font16,
+            fontWeight: FontWeight.w500),
+      ),
     );
   }
 
-  /// 构建页面主体，根据搜索状态显示加载、历史或结果
+  /// 构建页面主体
   Widget _buildBody(TextEditingController searchTextController) {
-    return Column(
+    return Obx(() {
+      if (controller.isSearching.value &&
+          controller.currentKeyword.isNotEmpty) {
+        return const Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ),
+        );
+      }
+
+      if (controller.currentKeyword.isEmpty) {
+        return _buildSearchHistory(searchTextController);
+      }
+
+      if (!controller.hasResults) {
+        return _buildEmptyState();
+      }
+
+      return _buildSearchResults();
+    });
+  }
+
+  /// 构建搜索结果列表
+  Widget _buildSearchResults() {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
       children: [
-        // Expanded(
-        //   // child: Obx(() {
-        //   //   // if (controller.isSearching.value) {
-        //   //   //   return const Center(child: CircularProgressIndicator());
-        //   //   // }
-        //   //   // if (controller.searchResults.isEmpty) {
-        //   //   //   return _buildSearchHistory(searchTextController);
-        //   //   // }
-        //   //   // return _buildSearchResults();
-        //   // }),
-        // ),
+        if (controller.contactResults.isNotEmpty)
+          _buildSection(
+            title: I18n.t('search.contacts'),
+            items: controller.contactResults,
+            itemBuilder: (friend) => _buildContactItem(friend as Friend),
+          ),
+        if (controller.groupResults.isNotEmpty)
+          _buildSection(
+            title: I18n.t('search.groups'),
+            items: controller.groupResults,
+            itemBuilder: (chat) => _buildGroupItem(chat as Chats),
+          ),
+        if (controller.messageResults.isNotEmpty)
+          _buildSection(
+            title: I18n.t('search.messages'),
+            items: controller.messageResults,
+            itemBuilder: (result) =>
+                _buildMessageResultItem(result as SearchMessageResult),
+          ),
+        const SizedBox(height: AppSizes.spacing32),
       ],
     );
   }
 
-  /// 构建搜索结果列表
-  ///
-  /// 显示匹配用户的头像、名称和消息计数，支持分隔线和错误图像处理。
-// Widget _buildSearchResults() {
-//   return ListView.separated(
-//     padding: const EdgeInsets.all(AppSizes.spacing16),
-//     itemCount: controller.searchResults.length,
-//     separatorBuilder: (context, index) => const Divider(
-//       height: 0.5,
-//       thickness: 0.5,
-//       color: AppColors.divider,
-//     ),
-//     itemBuilder: (context, index) {
-//       final result = controller.searchResults[index];
-//       return SizedBox(
-//         height: 48,
-//         child: Row(
-//           children: [
-//             const SizedBox(width: AppSizes.spacing12),
-//             ClipRRect(
-//               borderRadius: BorderRadius.circular(AppSizes.radius4),
-//               child: Image.network(
-//                 result.avatar,
-//                 width: 32,
-//                 height: 32,
-//                 fit: BoxFit.cover,
-//                 errorBuilder: (context, error, stackTrace) => Container(
-//                   width: 32,
-//                   height: 32,
-//                   decoration: BoxDecoration(
-//                     color: AppColors.background,
-//                     borderRadius: BorderRadius.circular(AppSizes.radius4),
-//                   ),
-//                   child: const Icon(Icons.person, size: 16, color: AppColors.textHint),
-//                 ),
-//               ),
-//             ),
-//             const SizedBox(width: AppSizes.spacing12),
-//             Expanded(
-//               child: Column(
-//                 mainAxisAlignment: MainAxisAlignment.center,
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   Text(result.name, style: const TextStyle(fontSize: AppSizes.font14)),
-//                   const SizedBox(height: AppSizes.spacing2),
-//                   Text(
-//                     '${result.messageCount}${I18n.t('search.related_records')}',
-//                     style: const TextStyle(fontSize: AppSizes.font12, color: AppColors.textHint),
-//                   ),
-//                 ],
-//               ),
-//             ),
-//             const SizedBox(width: AppSizes.spacing12),
-//           ],
-//         ),
-//       );
-//     },
-//   );
-// }
-//
-// /// 构建搜索历史区域
-// ///
-// /// 支持历史标签展示、点击填充搜索框并触发搜索、清除历史功能。
-// Widget _buildSearchHistory(TextEditingController searchTextController) {
-//   return Obx(() {
-//     if (controller.searchHistory.isEmpty) {
-//       return Center(
-//         child: Text(I18n.t('search.no_history'), style: const TextStyle(color: AppColors.textHint)),
-//       );
-//     }
-//     return ListView(
-//       padding: const EdgeInsets.all(AppSizes.spacing16),
-//       children: [
-//         _buildHistoryHeader(),
-//         const SizedBox(height: AppSizes.spacing8),
-//         _buildHistoryTags(searchTextController),
-//       ],
-//     );
-//   });
-// }
-//
-// /// 构建历史标题和清除按钮
-// Widget _buildHistoryHeader() {
-//   return Row(
-//     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//     children: [
-//       Text(
-//         I18n.t('search.history'),
-//         style: const TextStyle(fontSize: AppSizes.font16, fontWeight: FontWeight.bold),
-//       ),
-//       IconButton(
-//         icon: const Icon(Icons.delete_outline),
-//         onPressed: controller.clearSearchHistory,
-//       ),
-//     ],
-//   );
-// }
-//
-// /// 构建历史标签 Wrap 布局
-// Widget _buildHistoryTags(TextEditingController searchTextController) {
-//   return Wrap(
-//     spacing: AppSizes.spacing8,
-//     runSpacing: AppSizes.spacing8,
-//     children: controller.searchHistory.map((keyword) {
-//       return ActionChip(
-//         label: Text(keyword, style: const TextStyle(fontSize: AppSizes.font14)),
-//         backgroundColor: AppColors.background,
-//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radius16)),
-//         onPressed: () {
-//           searchTextController.text = keyword;
-//           controller.performSearch(keyword);
-//         },
-//       );
-//     }).toList(),
-//   );
-// }
+  /// 构建分类列表节
+  Widget _buildSection({
+    required String title,
+    required List items,
+    required Widget Function(dynamic) itemBuilder,
+  }) {
+    final bool showMore = items.length > 3;
+    final displayItems = showMore ? items.take(3).toList() : items;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(
+              AppSizes.spacing16, 16, AppSizes.spacing16, 8),
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: AppSizes.font13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Container(
+          color: AppColors.surface,
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: displayItems.length,
+            separatorBuilder: (_, __) =>
+                const Divider(height: 1, indent: 76, color: AppColors.divider),
+            itemBuilder: (context, index) => itemBuilder(displayItems[index]),
+          ),
+        ),
+        if (showMore)
+          InkWell(
+            onTap: () {
+              // TODO: 跳转到该分类的完整结果页
+            },
+            child: Container(
+              height: 48,
+              color: AppColors.surface,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppSizes.spacing16),
+              child: Row(
+                children: [
+                  Icon(Iconfont.search, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${I18n.t('search.more')} $title',
+                    style: const TextStyle(
+                        color: AppColors.primary, fontSize: AppSizes.font14),
+                  ),
+                  const Spacer(),
+                  Icon(Iconfont.fromName('right'),
+                      size: 14, color: AppColors.textHint),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// 构建联系人搜索结果项
+  Widget _buildContactItem(Friend friend) {
+    final keyword = controller.currentKeyword.value;
+    final friendId = friend.friendId;
+    final bool matchId = friendId.toLowerCase().contains(keyword.toLowerCase());
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing16, vertical: 4),
+      leading: _buildAvatar(friend.fullAvatar, Iconfont.person),
+      title: _buildHighlightedText(friend.name),
+      subtitle: matchId && keyword.isNotEmpty
+          ? _buildHighlightedText('ID: $friendId', isSubtitle: true)
+          : null,
+      onTap: () {
+        Get.toNamed('${Routes.HOME}${Routes.FRIEND_PROFILE}',
+            arguments: {'userId': friend.friendId});
+      },
+    );
+  }
+
+  /// 构建群组搜索结果项
+  Widget _buildGroupItem(Chats chat) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing16, vertical: 4),
+      leading: _buildAvatar(chat.fullAvatar, Iconfont.contacts),
+      title: _buildHighlightedText(chat.name),
+      onTap: () {
+        Get.find<ChatController>().changeCurrentChat(chat);
+      },
+    );
+  }
+
+  /// 构建消息搜索结果项
+  Widget _buildMessageResultItem(SearchMessageResult result) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.spacing16, vertical: 4),
+      leading: _buildAvatar(result.fullAvatar, Iconfont.message),
+      title: Text(
+        result.name,
+        style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: AppSizes.font16,
+            fontWeight: FontWeight.w500),
+      ),
+      subtitle: Text(
+        '${result.messageCount} ${I18n.t('search.related_records')}',
+        style: const TextStyle(
+            color: AppColors.textHint, fontSize: AppSizes.font13),
+      ),
+      trailing:
+          Icon(Iconfont.fromName('right'), size: 14, color: AppColors.textHint),
+      onTap: () {
+        // TODO: 跳转到该会话的消息详情搜索页
+      },
+    );
+  }
+
+  /// 构建头像
+  Widget _buildAvatar(String url, IconData fallback) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppSizes.radius8),
+      child: Container(
+        width: 44,
+        height: 44,
+        color: AppColors.background,
+        child: url.isNotEmpty
+            ? CachedNetworkImage(
+                imageUrl: url,
+                fit: BoxFit.cover,
+                placeholder: (_, __) =>
+                    Icon(fallback, color: AppColors.textHint, size: 24),
+                errorWidget: (_, __, ___) =>
+                    Icon(fallback, color: AppColors.textHint, size: 24),
+              )
+            : Icon(fallback, color: AppColors.textHint, size: 24),
+      ),
+    );
+  }
+
+  /// 构建关键词高亮的文本
+  Widget _buildHighlightedText(String text, {bool isSubtitle = false}) {
+    final keyword = controller.currentKeyword.value;
+    final style = TextStyle(
+      color: isSubtitle ? AppColors.textHint : AppColors.textPrimary,
+      fontSize: isSubtitle ? AppSizes.font13 : AppSizes.font16,
+      fontWeight: isSubtitle ? FontWeight.normal : FontWeight.w600,
+    );
+
+    if (keyword.isEmpty ||
+        !text.toLowerCase().contains(keyword.toLowerCase())) {
+      return Text(text, style: style);
+    }
+
+    final List<TextSpan> spans = [];
+    final lowerText = text.toLowerCase();
+    final lowerKeyword = keyword.toLowerCase();
+
+    int start = 0;
+    int index = lowerText.indexOf(lowerKeyword);
+
+    while (index != -1) {
+      if (index > start) {
+        spans.add(TextSpan(text: text.substring(start, index)));
+      }
+      spans.add(TextSpan(
+        text: text.substring(index, index + keyword.length),
+        style: const TextStyle(
+            color: AppColors.primary, fontWeight: FontWeight.bold),
+      ));
+      start = index + keyword.length;
+      index = lowerText.indexOf(lowerKeyword, start);
+    }
+
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start)));
+    }
+
+    return RichText(
+      text: TextSpan(
+        style: style,
+        children: spans,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  /// 构建空状态
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Iconfont.fromName('71shibai'),
+              size: 70, color: AppColors.textHint.withOpacity(0.5)),
+          const SizedBox(height: AppSizes.spacing16),
+          Text(
+            I18n.t('search.no_result'),
+            style: const TextStyle(
+                color: AppColors.textHint, fontSize: AppSizes.font15),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建搜索历史
+  Widget _buildSearchHistory(TextEditingController searchTextController) {
+    return Obx(() {
+      if (controller.searchHistory.isEmpty) {
+        return const SizedBox();
+      }
+      return ListView(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.spacing16, vertical: AppSizes.spacing20),
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                I18n.t('search.history'),
+                style: const TextStyle(
+                  fontSize: AppSizes.font15,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              GestureDetector(
+                onTap: controller.clearSearchHistory,
+                child: const Icon(Icons.delete_outline,
+                    size: 20, color: AppColors.textHint),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.spacing16),
+          Wrap(
+            spacing: AppSizes.spacing10,
+            runSpacing: AppSizes.spacing10,
+            children: controller.searchHistory.map((keyword) {
+              return GestureDetector(
+                onTap: () => controller.searchNow(keyword),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppSizes.radius20),
+                    border: Border.all(color: AppColors.divider),
+                  ),
+                  child: Text(
+                    keyword,
+                    style: const TextStyle(
+                        fontSize: AppSizes.font14,
+                        color: AppColors.textSecondary),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      );
+    });
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_im/app/models/user.dart';
 import 'package:flutter_im/constants/app_colors.dart';
 import 'package:flutter_im/constants/app_constant.dart';
 import 'package:flutter_im/constants/app_sizes.dart';
@@ -69,11 +70,11 @@ class MyQRCodePage extends StatelessWidget {
               const SizedBox(height: _spacing),
 
               /// 用户信息
-              _buildUserInfo(controller.userInfo),
+              _buildUserInfo(controller.userInfo.value as User),
               const SizedBox(height: _spacing),
 
               /// 二维码
-              _buildQRCode(controller.userInfo, context),
+              _buildQRCode(controller.userInfo.value as User, context),
               const SizedBox(height: 16),
 
               /// 提示文字
@@ -93,9 +94,9 @@ class MyQRCodePage extends StatelessWidget {
   // --- UI 构建方法 ---
 
   /// 构建用户信息区域（头像和用户名）
-  Widget _buildUserInfo(Map<dynamic, dynamic> userInfo) {
-    final username = userInfo['name'] as String? ?? _defaultUsername;
-    final avatarUrl = userInfo['avatar'] as String? ?? _defaultAvatar;
+  Widget _buildUserInfo(User userInfo) {
+    final username = userInfo.name ?? _defaultUsername;
+    final avatarUrl = userInfo.avatar ?? _defaultAvatar;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -144,9 +145,9 @@ class MyQRCodePage extends StatelessWidget {
   }
 
   /// 构建二维码区域
-  Widget _buildQRCode(Map<dynamic, dynamic> userInfo, BuildContext context) {
-    final userId = userInfo['userId']?.toString() ?? _defaultUserId;
-    final avatarUrl = userInfo['avatar'] as String? ?? _defaultAvatar;
+  Widget _buildQRCode(User userInfo, BuildContext context) {
+    final userId = userInfo.userId ?? _defaultUserId;
+    final avatarUrl = userInfo.avatar ?? _defaultAvatar;
     final qrData =
         Uri.encodeComponent('${AppConstants.friendProfilePrefix}$userId');
 

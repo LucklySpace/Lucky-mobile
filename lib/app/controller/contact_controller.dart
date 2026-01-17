@@ -1,13 +1,9 @@
-import 'package:flutter_im/exceptions/app_exception.dart';
-import 'package:flutter_im/utils/objects.dart';
+import 'package:flutter_im/app/core/base/base_controller.dart';
 import 'package:flutter_im/utils/performance.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:get_storage/get_storage.dart';
 
-import '../../constants/app_constant.dart';
-import '../api/api_service.dart';
-import '../core/handlers/error_handler.dart';
 import '../database/app_database.dart';
 import '../models/friend.dart';
 import '../models/friend_request.dart';
@@ -19,17 +15,15 @@ import '../models/friend_request.dart';
 /// - 好友请求处理（发送、接受、拒绝）
 /// - 好友搜索
 /// - 本地数据同步
-class ContactController extends GetxController {
+class ContactController extends BaseController {
   // ==================== 依赖注入 ====================
 
-  final _apiService = Get.find<ApiService>();
   final _db = GetIt.instance<AppDatabase>();
   final _storage = GetStorage();
 
   // ==================== 常量定义 ====================
 
   static const String _keyUserId = 'userId';
-  static const int _successCode = AppConstants.businessCodeSuccess;
 
   // 响应式状态
   final RxList<Friend> contactsList = <Friend>[].obs; // 好友列表
@@ -37,7 +31,6 @@ class ContactController extends GetxController {
   final RxList<Friend> searchResults = <Friend>[].obs; // 搜索结果
   final RxString userId = ''.obs; // 当前用户ID
   final RxInt newFriendRequestCount = 0.obs; // 未处理好友请求计数
-  final RxBool isLoading = false.obs; // 加载好友列表状态
   final RxBool isLoadingRequests = false.obs; // 加载好友请求状态
   final RxBool isSearching = false.obs; // 搜索状态
 
@@ -47,7 +40,7 @@ class ContactController extends GetxController {
     // 初始化用户ID
     final storedUserId = _storage.read(_keyUserId);
     if (storedUserId != null) {
-      userId.value = storedUserId;
+      userId.value = storedUserId.toString();
     }
   }
 
@@ -61,89 +54,94 @@ class ContactController extends GetxController {
   }
 
   /// 获取好友列表
-  ///
-  /// 流程：
-  /// 1. 检查用户ID
-  /// 2. 查询本地最大sequence
-  /// 3. 从服务器获取更新
-  /// 4. 批量保存到本地数据库
-  /// 5. 刷新列表
   Future<void> fetchContacts() async {
     try {
       isLoading.value = true;
-
       // 确保用户ID已加载
       if (userId.isEmpty) {
         getUserId();
       }
 
       if (userId.isEmpty) {
-        throw BusinessException('用户ID未初始化');
+        showError('用户ID未初始化');
+        return;
       }
+
+      Get.log('📥 开始获取好友列表');
 
       // 查询本地最大的sequence（用于增量同步）
       final localMaxSequence = await _db.friendDao.getMaxSequence(userId.value);
 
-      Get.log('📥 开始获取好友列表，本地sequence: $localMaxSequence');
-
       // 从服务器获取好友列表
-      final response = await _apiService.getFriendList({
-        'userId': userId.value,
+      final response = await apiService.getFriendList({
         'sequence': localMaxSequence ?? 0,
+        'userId': userId.value,
       });
 
-      _handleApiResponse(response, onSuccess: (data) async {
-        final list = (data as List<dynamic>)
-            .map((friend) => Friend.fromJson(friend))
-            .toList();
+      handleApiResponse(response, onSuccess: (data) async {
+        final List<Friend> rawList = data;
 
-        if (list.isEmpty) {
-          Get.log('📭 无新好友数据');
+        if (rawList.isEmpty) {
+          Get.log('✅ 好友列表为空或已是最新');
           return;
         }
 
-        Get.log('📥 收到 ${list.length} 个好友数据');
+        Get.log('📥 收到 ${rawList.length} 个好友更新');
 
-        // 使用批处理优化数据库插入性能
+        // 批量保存到本地数据库
         await Performance.batchExecute(
-          list,
+          rawList,
           (friend) async => await _db.friendDao.insertOrUpdate(friend),
           batchSize: 20,
         );
 
-        // 从数据库获取最新的好友列表
-        final allFriends = await _db.friendDao.list(userId.value);
-        if (allFriends != null && allFriends.isNotEmpty) {
-          contactsList.value = allFriends;
-        }
-
-        Get.log('✅ 好友列表已更新，共 ${contactsList.length} 人');
-      }, errorMessage: '获取好友列表失败');
-    } catch (e) {
-      _showError('获取好友列表失败: $e');
-      contactsList.value = [];
+        Get.log('✅ 好友列表更新完成');
+      });
     } finally {
       isLoading.value = false;
+      // 刷新好友列表
+      await _loadContactsFromDb();
     }
+  }
+
+  /// 从数据库加载好友列表
+  Future<void> _loadContactsFromDb() async {
+    if (userId.isEmpty) return;
+
+    // 从数据库加载好友列表
+    final friends = await _db.friendDao.list(userId.value);
+    if (friends != null) {
+      // 过滤掉已拉黑的好友
+      contactsList.value = friends.where((friend) => friend.isNormal).toList();
+      Get.log('📚 从数据库加载了 ${contactsList.length} 个好友');
+    }
+  }
+
+  /// 获取好友信息
+  Future<Friend> getFriend(String targetId, String friendId) async {
+    Friend? result;
+
+    if (!targetId.isEmpty) {
+      final response = await apiService
+          .getFriendInfo({'fromId': targetId, 'toId': friendId});
+      handleApiResponse(response, onSuccess: (data) {
+        result = data;
+      });
+    }
+
+    return result ?? Friend(userId: targetId, friendId: friendId, name: '');
   }
 
   /// 删除好友
   Future<void> deleteFriend(String friendId) async {
-    try {
-      final response = await _apiService.deleteContact({
-        'fromId': userId.value,
-        'toId': friendId,
-      });
-      _handleApiResponse(response, onSuccess: (_) async {
-        if (Objects.isNotBlank(userId.value) && Objects.isNotBlank(friendId)) {
-          await _db.friendDao.deleteFriend(userId.value, friendId);
-        }
-        Get.snackbar('成功', '已删除好友');
-        fetchContacts(); // 刷新好友列表
-      }, errorMessage: '删除好友失败');
-    } catch (e) {
-      _showError('删除好友失败: $e');
-    }
+    final response = await apiService.deleteContact({'friendId': friendId});
+    handleApiResponse(response, onSuccess: (data) async {
+      if (userId.value.isNotEmpty && friendId.isNotEmpty) {
+        await _db.friendDao.deleteFriend(userId.value, friendId);
+      }
+      showSuccess('已删除好友');
+      fetchContacts(); // 刷新好友列表
+    });
   }
 
   // --- 好友请求管理 ---
@@ -154,101 +152,58 @@ class ContactController extends GetxController {
       getUserId();
     }
 
-    try {
-      isLoadingRequests.value = true;
-      final response = await _apiService.getRequestFriendList({
-        'userId': userId.value,
-      });
-      _handleApiResponse(response, onSuccess: (data) {
-        friendRequests.value = (data as List<dynamic>)
-            .map((request) => FriendRequest.fromJson(request))
-            .toList();
-        // 计算未处理请求数量
-        newFriendRequestCount.value = friendRequests
-            .where((request) => request.approveStatus == 0)
-            .length;
-      }, errorMessage: '获取好友请求列表失败');
-    } finally {
-      isLoadingRequests.value = false;
-    }
+    isLoadingRequests.value = true;
+    final response =
+        await apiService.getRequestFriendList({"userId": userId.value});
+    handleApiResponse(response, onSuccess: (data) {
+      friendRequests.value = response.data ?? [];
+      // 计算未处理请求数量
+      newFriendRequestCount.value =
+          friendRequests.where((request) => request.approveStatus == 0).length;
+    }, silent: true);
+    isLoadingRequests.value = false;
   }
 
   /// 发送好友请求
-  Future<void> sendFriendRequest(String targetUserId) async {
-    try {
-      final response = await _apiService.requestContact({
-        'fromId': userId.value,
-        'toId': targetUserId,
-      });
-      _handleApiResponse(response, onSuccess: (_) {
-        Get.snackbar('成功', '好友请求已发送');
-      }, errorMessage: '发送好友请求失败');
-    } catch (e) {
-      _showError('发送好友请求失败: $e');
-    }
+  Future<void> sendFriendRequest(String targetUserId, String reason) async {
+    final response = await apiService.requestContact({
+      'friendId': targetUserId,
+      'reason': reason,
+    });
+    handleApiResponse(response, onSuccess: (data) {
+      showSuccess('好友请求已发送');
+    });
   }
 
-  ///  审批联系人
-  ///  requestId 联系人请求id
-  /// approveStatus 状态 （0未审批，1同意，2拒绝）
-  Future<void> handleFriendApprove(String requestId, int approveStatus) async {
-    try {
-      final response = await _apiService.approveContact({
-        'id': requestId,
-        'approveStatus': approveStatus,
-      });
-      _handleApiResponse(response, onSuccess: (_) {
-        Get.snackbar('成功', '已接受好友请求');
-        fetchContacts(); // 刷新好友列表
-        fetchFriendRequests(); // 刷新请求列表
-      }, errorMessage: '处理好友请求失败');
-    } catch (e) {
-      _showError('处理好友请求失败: $e');
-    }
+  /// 审批联系人
+  Future<void> handleFriendApprove(String requestId, bool approve) async {
+    final response = await apiService.approveContact({
+      'requestId': requestId,
+      'status': approve ? 1 : 2,
+    });
+    handleApiResponse(response, onSuccess: (data) {
+      showSuccess(approve ? '已接受好友请求' : '已拒绝好友请求');
+      fetchContacts(); // 刷新好友列表
+      fetchFriendRequests(); // 刷新请求列表
+    });
   }
 
   // --- 搜索功能 ---
 
   /// 搜索用户
   Future<void> searchUser(String keyword) async {
-    try {
-      isSearching.value = true;
-      searchResults.clear();
-      final response = await _apiService.getFriendInfo({
-        'fromId': userId.value,
-        'toId': keyword,
-      });
-      _handleApiResponse(response, onSuccess: (data) {
-        if (data != null) {
-          searchResults.add(Friend.fromJson(data));
-        } else {
-          Get.snackbar('错误', '搜索用户不存在');
-        }
-      }, errorMessage: '搜索用户失败');
-    } finally {
-      isSearching.value = false;
-    }
-  }
-
-  // --- 辅助方法 ---
-
-  /// 统一处理 API 响应
-  void _handleApiResponse(
-    Map<String, dynamic>? response, {
-    required void Function(dynamic) onSuccess,
-    required String errorMessage,
-  }) {
-    final code = Objects.safeGet<int>(response, 'code');
-    if (code == _successCode) {
-      return onSuccess(response?['data']);
-    }
-    final msg = Objects.safeGet<String>(response, 'message', errorMessage);
-    throw BusinessException(msg.toString());
-  }
-
-  /// 显示错误提示
-  void _showError(dynamic error) {
-    ErrorHandler.handle(error);
+    isSearching.value = true;
+    searchResults.clear();
+    final response =
+        await apiService.searchFriendInfoList({'keyword': keyword});
+    handleApiResponse(response, onSuccess: (data) {
+      final List<Friend> users = data;
+      searchResults.value = users;
+      if (searchResults.isEmpty) {
+        showInfo('搜索用户不存在');
+      }
+    });
+    isSearching.value = false;
   }
 
   /// 更新好友请求计数

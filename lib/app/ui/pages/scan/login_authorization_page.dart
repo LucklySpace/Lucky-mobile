@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_im/app/models/models.dart';
 import 'package:get/get.dart';
 
 import '../../../../constants/app_colors.dart';
@@ -60,7 +61,7 @@ class AuthorizationPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               /// 用户头像
-              _buildAvatar(controller.userInfo, context),
+              _buildAvatar(controller.userInfo.value as User, context),
               const SizedBox(height: AppSizes.spacing32),
 
               /// 标题
@@ -89,8 +90,8 @@ class AuthorizationPage extends StatelessWidget {
   // --- UI 构建方法 ---
 
   /// 构建用户头像区域
-  Widget _buildAvatar(Map<dynamic, dynamic> userInfo, BuildContext context) {
-    final avatarUrl = userInfo['avatar'] as String? ?? _defaultAvatar;
+  Widget _buildAvatar(User userInfo, BuildContext context) {
+    final avatarUrl = userInfo.avatar ?? _defaultAvatar;
 
     return Container(
         width: _avatarSize,

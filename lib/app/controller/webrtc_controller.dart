@@ -5,15 +5,14 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../utils/objects.dart';
-import '../api/api_service.dart';
+import '../core/base/base_controller.dart';
 import '../core/handlers/error_handler.dart';
 
 /// WebRTC 控制器，管理视频通话的推流、拉流及设备配置
 /// 1. 为本地预览创建仅含视频轨道的流，避免音频回路导致啸声。
 /// 2. 统一音频采集参数，启用回声消除、自动增益和噪声抑制。
 /// 3. 规范化错误处理和日志记录，提升代码可维护性。
-class WebRtcController extends GetxController {
+class WebRtcController extends BaseController {
   // 常量定义
   static const _mediaConstraints = {
     'audio': {
@@ -31,10 +30,6 @@ class WebRtcController extends GetxController {
   ];
   static const _maxRetries = 3; // 拉流重试次数
   static const _retryDelay = Duration(seconds: 1); // 重试间隔
-  static const _successCode = 200;
-
-  // 依赖注入
-  final _apiService = Get.find<ApiService>();
 
   // 响应式状态
   final RxInt isConnectState = 0.obs; // 推流状态：0 未开始，1 成功，2 失败
@@ -88,8 +83,8 @@ class WebRtcController extends GetxController {
           pc.onIceConnectionState =
               (state) => _onIceConnectionState(state, renderId);
 
-          final answer = await _apiService.webRtcHandshake(
-              url, webrtcUrl, offer.sdp ?? '');
+          final answer =
+              await apiService.webRtcHandshake(url, webrtcUrl, offer.sdp ?? '');
           // answer 已经在 ApiService 中校验并抛出异常，如果为 null 则说明某种未捕获异常
           await pc.setRemoteDescription(answer);
 
@@ -104,7 +99,7 @@ class WebRtcController extends GetxController {
           return true;
         } catch (e) {
           if (retry == _maxRetries - 1) {
-            _showError(AppException('拉流重试失败', details: e));
+            showError(AppException('拉流重试失败', details: e));
             callback?.call(false);
             return false;
           }
@@ -113,7 +108,7 @@ class WebRtcController extends GetxController {
       }
       return false;
     } catch (e) {
-      _showError(AppException('添加远程视频失败', details: e));
+      showError(AppException('添加远程视频失败', details: e));
       callback?.call(false);
       return false;
     }
@@ -160,7 +155,7 @@ class WebRtcController extends GetxController {
         'self': true,
       });
     } catch (e) {
-      _showError(AppException('开启本地摄像头失败', details: e));
+      showError(AppException('开启本地摄像头失败', details: e));
     }
   }
 
@@ -184,14 +179,14 @@ class WebRtcController extends GetxController {
       final offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      final answer = await _apiService
+      final answer = await apiService
           .webRtcHandshake(url, webrtcUrl, offer.sdp ?? '', type: 'publish');
       await pc.setRemoteDescription(answer);
 
       callback?.call(true);
       return true;
     } catch (e) {
-      _showError(AppException('开启本地推流失败', details: e));
+      showError(AppException('开启本地推流失败', details: e));
       callback?.call(false);
       return false;
     }
@@ -203,7 +198,7 @@ class WebRtcController extends GetxController {
     try {
       final index = rtcList.indexWhere((item) => item['renderId'] == renderId);
       if (index == -1) {
-        _showError(AppException('视频流不存在: $renderId'), silent: true);
+        showError(AppException('视频流不存在: $renderId'), silent: true);
         return;
       }
 
@@ -213,7 +208,7 @@ class WebRtcController extends GetxController {
       await item['renderer']?.dispose();
       rtcList.removeAt(index);
     } catch (e) {
-      _showError(AppException('关闭视频流失败', details: e), silent: true);
+      showError(AppException('关闭视频流失败', details: e), silent: true);
     }
   }
 
@@ -230,20 +225,20 @@ class WebRtcController extends GetxController {
         try {
           await item['pc']?.close();
         } catch (e) {
-          _showError(AppException('关闭 PeerConnection 时出错', details: e),
+          showError(AppException('关闭 PeerConnection 时出错', details: e),
               silent: true);
         }
 
         try {
           await item['renderer']?.srcObject?.dispose();
         } catch (e) {
-          _showError(AppException('释放渲染器源对象时出错', details: e), silent: true);
+          showError(AppException('释放渲染器源对象时出错', details: e), silent: true);
         }
 
         try {
           await item['renderer']?.dispose();
         } catch (e) {
-          _showError(AppException('释放渲染器时出错', details: e), silent: true);
+          showError(AppException('释放渲染器时出错', details: e), silent: true);
         }
       }
 
@@ -254,7 +249,7 @@ class WebRtcController extends GetxController {
 
       Get.log('所有视频流和资源已成功关闭');
     } catch (e) {
-      _showError(AppException('关闭所有视频流失败', details: e), silent: true);
+      showError(AppException('关闭所有视频流失败', details: e), silent: true);
     }
   }
 
@@ -270,7 +265,7 @@ class WebRtcController extends GetxController {
         ]) {
           final status = await permission.request();
           if (status.isPermanentlyDenied) {
-            _showError(AppException('${permission.toString()} 权限被永久拒绝'));
+            showError(AppException('${permission.toString()} 权限被永久拒绝'));
           }
         }
       }
@@ -279,7 +274,7 @@ class WebRtcController extends GetxController {
       cameraIndex = getVideoDevice();
       Get.log('当前视频输入设备ID: $cameraIndex');
     } catch (e) {
-      _showError(AppException('加载设备列表失败', details: e));
+      showError(AppException('加载设备列表失败', details: e));
     }
   }
 
@@ -302,7 +297,7 @@ class WebRtcController extends GetxController {
       };
       await _updateLocalStream(mediaConstraints);
     } catch (e) {
-      _showError(AppException('切换摄像头失败', details: e));
+      showError(AppException('切换摄像头失败', details: e));
     }
   }
 
@@ -315,7 +310,7 @@ class WebRtcController extends GetxController {
       final constraints = _buildMediaConstraints(cameraIndex, frameRate: 60);
       await _updateLocalStream(constraints);
     } catch (e) {
-      _showError(AppException('设置视频分辨率失败', details: e));
+      showError(AppException('设置视频分辨率失败', details: e));
     }
   }
 
@@ -334,7 +329,7 @@ class WebRtcController extends GetxController {
             audioTracks.first.enabled as Map<String, Object>;
       }
     } catch (e) {
-      _showError(AppException('切换麦克风状态失败', details: e));
+      showError(AppException('切换麦克风状态失败', details: e));
     }
   }
 
@@ -363,10 +358,10 @@ class WebRtcController extends GetxController {
         Get.log('$index ICE 连接成功，开始推流');
         break;
       case RTCIceConnectionState.RTCIceConnectionStateFailed:
-        _showError(AppException('$index ICE 连接失败'));
+        showError('$index ICE 连接失败');
         break;
       case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
-        _showError(AppException('$index ICE 连接断开，可尝试重新连接'));
+        showError('$index ICE 连接断开，可尝试重新连接');
         break;
       default:
     }
@@ -379,22 +374,9 @@ class WebRtcController extends GetxController {
 
   // --- 辅助方法 ---
 
-  /// 统一处理 API 响应
-  void _handleApiResponse(
-    Map<String, dynamic>? response, {
-    required void Function(dynamic) onSuccess,
-    required String errorMessage,
-  }) {
-    final code = Objects.safeGet<int>(response, 'code');
-    if (code == _successCode) {
-      return onSuccess(response?['data']);
-    }
-    final msg = Objects.safeGet<String>(response, 'message', errorMessage);
-    throw BusinessException(msg.toString());
-  }
-
   /// 显示错误提示
-  void _showError(dynamic error, {bool silent = false}) {
+  @override
+  void showError(dynamic error, {bool silent = false}) {
     ErrorHandler.handle(error, silent: silent);
   }
 
@@ -455,7 +437,7 @@ class WebRtcController extends GetxController {
         await sender.replaceTrack(newTrack);
       }
     } catch (e) {
-      _showError(AppException('更新本地流失败', details: e));
+      showError(AppException('更新本地流失败', details: e));
     }
   }
 

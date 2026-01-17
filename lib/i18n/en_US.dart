@@ -90,6 +90,7 @@ const Map<String, String> enUS = {
   'chat.forward': 'Forward',
   'chat.quote': 'Quote',
   'chat.recalled': 'Message recalled',
+  'chat.draft': 'Draft',
   'chat.video_call': 'Video Call',
   'chat.voice_call': 'Voice Call',
   'chat.take_photo': 'Take Photo',
@@ -181,6 +182,14 @@ const Map<String, String> enUS = {
   'settings.account': 'Account & Security',
   'settings.privacy': 'Privacy',
   'settings.notification': 'Notifications',
+  'settings.notification.enable': 'Show Notifications',
+  'settings.notification.show_preview': 'Show Message Preview',
+  'settings.notification.sound': 'Sound',
+  'settings.notification.vibrate': 'Vibrate',
+  'settings.notification.desc':
+      'You will not receive any notifications when disabled',
+  'settings.notification.preview_desc':
+      'Notification will only show "You have a new message" when disabled',
   'settings.general': 'General',
   'settings.about': 'About',
   'settings.language': 'Language',

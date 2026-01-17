@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter_im/constants/index.dart';
 import 'package:get/get.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -388,22 +389,22 @@ class WebSocketService extends GetxService {
       if (serializationType == SerializationType.protobuf) {
         // Protobuf 序列化心跳
         final heartbeatMessage = IMConnectMessage(
-          code: 1001,
+          code: MessageType.heartBeat.code,
           token: token,
-          message: 'heartbeat',
+          message: AppConstants.heartbeat,
         );
         sendMessage(heartbeatMessage.writeToBuffer());
       } else {
         // JSON 序列化心跳
         final heartbeatMessage = {
-          'code': 1001,
+          'code': MessageType.heartBeat.code,
           'token': token,
-          'data': 'heartbeat',
+          'data': AppConstants.heartbeat,
         };
         sendMessage(jsonEncode(heartbeatMessage));
       }
 
-      // Get.log('💓 心跳已发送');
+      Get.log('💓 心跳已发送');
     } catch (e) {
       Get.log('❌ 发送心跳失败: $e');
     }
@@ -451,18 +452,18 @@ class WebSocketService extends GetxService {
       if (serializationType == SerializationType.protobuf) {
         // Protobuf 序列化注册消息
         final registerMessage = IMConnectMessage(
-          code: 1000,
+          code: MessageType.register.code,
           token: token,
-          message: 'registrar',
+          message: AppConstants.registrar,
           deviceType: AppConfig.deviceType,
         );
         sendMessage(registerMessage.writeToBuffer());
       } else {
         // JSON 序列化注册消息
         final registerMessage = {
-          'code': 1000,
+          'code': MessageType.register.code,
           'token': token,
-          'data': 'registrar',
+          'data': AppConstants.registrar,
           'deviceType': AppConfig.deviceType,
         };
         sendMessage(jsonEncode(registerMessage));

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_im/constants/app_sizes.dart';
+import 'package:get/get.dart';
 
 import '../../../../constants/app_colors.dart';
 import '../../../../utils/date.dart';
@@ -70,6 +71,8 @@ class ChatItem extends StatelessWidget {
 
   /// 构建聊天内容区域（名称、时间、最新消息）
   Widget _buildContent() {
+    final hasDraft = chats.draft != null && chats.draft!.isNotEmpty;
+
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,10 +100,25 @@ class ChatItem extends StatelessWidget {
           ),
           const SizedBox(height: _contentSpacing),
 
-          /// 最新消息
-          Text(
-            chats.message ?? '',
-            style: _messageStyle,
+          /// 最新消息或草稿
+          RichText(
+            text: TextSpan(
+              style: _messageStyle,
+              children: [
+                if (hasDraft) ...[
+                  TextSpan(
+                    text: '[${'chat.draft'.tr}] ',
+                    style: const TextStyle(color: AppColors.female),
+                  ),
+                  TextSpan(
+                    text: chats.draft,
+                  ),
+                ] else
+                  TextSpan(
+                    text: chats.message ?? '',
+                  ),
+              ],
+            ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),

@@ -1,14 +1,14 @@
-import 'package:flutter_im/exceptions/app_exception.dart';
-import 'package:flutter_im/utils/objects.dart';
-import 'package:flutter_im/utils/performance.dart';
 import 'package:get/get.dart';
 import 'package:get_it/get_it.dart';
 import 'package:get_storage/get_storage.dart';
 
 import '../../constants/app_constant.dart';
-import '../api/api_service.dart';
+import '../../exceptions/app_exception.dart';
+import '../../utils/performance.dart';
+import '../core/base/base_controller.dart';
 import '../core/handlers/error_handler.dart';
 import '../database/app_database.dart';
+import '../models/chats.dart';
 import '../models/friend.dart';
 import '../models/search_message_result.dart';
 
@@ -19,7 +19,7 @@ import '../models/search_message_result.dart';
 /// - 搜索历史管理
 /// - 搜索结果缓存
 /// - 搜索防抖优化
-class SearchController extends GetxController {
+class SearchController extends BaseController {
   // ==================== 常量定义 ====================
 
   static const String _searchHistoryKey = 'search_history';
@@ -30,14 +30,17 @@ class SearchController extends GetxController {
 
   final _storage = GetStorage();
   final _db = GetIt.instance<AppDatabase>();
-  late final ApiService _apiService;
 
   /// 搜索防抖控制器
   late final DebounceController _searchDebounce;
 
   // ==================== 响应式状态 ====================
 
-  final searchResults = <SearchMessageResult>[].obs;
+  /// 搜索结果分类
+  final contactResults = <Friend>[].obs;
+  final groupResults = <Chats>[].obs;
+  final messageResults = <SearchMessageResult>[].obs;
+
   final searchHistory = <String>[].obs;
   final isSearching = false.obs;
   final RxString currentKeyword = ''.obs;
@@ -47,7 +50,6 @@ class SearchController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _apiService = Get.find<ApiService>();
 
     // 初始化防抖控制器
     _searchDebounce = DebounceController(
@@ -144,70 +146,101 @@ class SearchController extends GetxController {
   Future<void> _executeSearch(String keyword) async {
     final trimmedKeyword = keyword.trim();
 
-    // 验证搜索关键词
     if (trimmedKeyword.isEmpty) {
-      searchResults.clear();
-      return;
-    }
-
-    if (trimmedKeyword.length > 100) {
-      ErrorHandler.showWarning('搜索关键词过长');
+      _clearAllResults();
       return;
     }
 
     isSearching.value = true;
     currentKeyword.value = trimmedKeyword;
-    searchResults.clear();
+    _clearAllResults();
 
     final storedUserId = _storage.read(_keyUserId);
     if (storedUserId == null) {
-      ErrorHandler.handle(BusinessException('用户ID未找到'));
       isSearching.value = false;
       return;
     }
 
     try {
-      Get.log('🔍 开始搜索: $trimmedKeyword');
+      // 1. 搜索联系人
+      final friends =
+          await _db.friendDao.searchFriends(storedUserId, trimmedKeyword);
+      contactResults.addAll(friends);
 
-      // 并行搜索单聊和群聊消息
+      // 2. 搜索群组 (根据名称搜索本地群组会话)
+      final groups =
+          await _db.chatsDao.searchGroupChats(storedUserId, trimmedKeyword);
+      groupResults.addAll(groups);
+
+      // 3. 搜索聊天记录
       final results = await Future.wait([
         _db.singleMessageDao.searchMessages(trimmedKeyword, storedUserId),
         _db.groupMessageDao.searchMessages(trimmedKeyword, storedUserId),
       ]);
 
-      final singleMessages = results[0];
-      final groupMessages = results[1];
-
-      Get.log(
-          '📊 搜索结果: 单聊 ${singleMessages.length} 条, 群聊 ${groupMessages.length} 条');
-
-      // 整理搜索结果
       final Map<String, SearchMessageResult> resultMap = {};
-
-      // 处理单聊消息
-      if (singleMessages.isNotEmpty) {
-        await _processSingleMessages(singleMessages, storedUserId, resultMap);
+      if (results[0].isNotEmpty) {
+        await _processSingleMessages(results[0], storedUserId, resultMap);
       }
+      if (results[1].isNotEmpty) {
+        await _processGroupMessages(results[1], storedUserId, resultMap);
+      }
+      messageResults.value = resultMap.values.toList();
 
-      // 处理群聊消息（如需要）
-      // if (groupMessages.isNotEmpty) {
-      //   await _processGroupMessages(groupMessages, storedUserId, resultMap);
-      // }
+      // 按时间降序排序消息结果
+      messageResults.sort((a, b) {
+        final aTime = a.messages.isNotEmpty ? a.messages.first.messageTime : 0;
+        final bTime = b.messages.isNotEmpty ? b.messages.first.messageTime : 0;
+        return bTime.compareTo(aTime);
+      });
 
-      // 将Map转换为List并更新searchResults
-      searchResults.value = resultMap.values.toList();
-
-      // 保存到搜索历史
-      if (searchResults.isNotEmpty) {
-        await saveSearch(trimmedKeyword);
-        Get.log('✅ 搜索完成，找到 ${searchResults.length} 个会话');
-      } else {
-        Get.log('📭 没有找到匹配的消息');
+      // 保存到搜索历史 (如果有结果且关键字长度大于1)
+      if (trimmedKeyword.length > 1 && hasResults) {
+        saveSearch(trimmedKeyword);
       }
     } catch (e) {
       ErrorHandler.handle(AppException('搜索失败', details: e));
     } finally {
       isSearching.value = false;
+    }
+  }
+
+  void _clearAllResults() {
+    contactResults.clear();
+    groupResults.clear();
+    messageResults.clear();
+  }
+
+  /// 处理群聊消息搜索结果
+  Future<void> _processGroupMessages(
+    List<dynamic> messages,
+    String userId,
+    Map<String, SearchMessageResult> resultMap,
+  ) async {
+    for (final message in messages) {
+      final groupId = message.groupId;
+      if (groupId == null) continue;
+
+      if (!resultMap.containsKey(groupId)) {
+        final chats =
+            await _db.chatsDao.getChatByOwnerIdAndToId(userId, groupId);
+        if (chats != null && chats.isNotEmpty) {
+          final chat = chats.first;
+          resultMap[groupId] = SearchMessageResult(
+            id: groupId,
+            name: chat.name,
+            avatar: chat.avatar,
+            messageCount: 0,
+            messages: [],
+            type: '',
+          );
+        }
+      }
+
+      if (resultMap.containsKey(groupId)) {
+        resultMap[groupId]!.messages.add(message);
+        resultMap[groupId]!.messageCount;
+      }
     }
   }
 
@@ -220,59 +253,64 @@ class SearchController extends GetxController {
     for (final message in messages) {
       final chatId = message.fromId == userId ? message.toId : message.fromId;
 
-      // 如果还没有获取过这个聊天的信息
       if (!resultMap.containsKey(chatId)) {
-        try {
-          final response = await _apiService
-              .getFriendInfo({'fromId': userId, 'toId': chatId});
-
-          _handleApiResponse(response, onSuccess: (data) {
-            if (data != null) {
-              final friend = Friend.fromJson(data);
-              resultMap[chatId] = SearchMessageResult(
-                id: chatId,
-                name: friend.name ?? "未知用户",
-                avatar: friend.avatar ?? "",
-                messageCount: 0,
-                messages: [],
-              );
-            }
-          }, errorMessage: '获取用户信息失败');
-        } catch (e) {
-          // 单个好友信息获取失败不影响其他结果
-          Get.log('⚠️ 获取好友信息失败 ($chatId): $e');
-          continue;
+        // 先尝试从本地数据库获取好友信息
+        final localFriend = await _db.friendDao.getFriendById(userId, chatId);
+        if (localFriend != null) {
+          resultMap[chatId] = SearchMessageResult(
+            id: chatId,
+            name: localFriend.name ?? "未知用户",
+            avatar: localFriend.avatar ?? "",
+            messageCount: 0,
+            messages: [],
+            type: '',
+          );
+        } else {
+          // 本地没有再尝试从网络获取
+          final response = await apiService.getFriendInfo({'friendId': chatId});
+          handleApiResponse(response, onSuccess: (data) {
+            final user = data;
+            resultMap[chatId] = SearchMessageResult(
+              id: chatId,
+              name: user.name,
+              avatar: user.avatar,
+              messageCount: 0,
+              messages: [],
+              type: '',
+            );
+          }, onError: (code, message) {
+            Get.log('⚠️ 获取好友信息失败 ($chatId): $message');
+            // 如果获取失败，先占个位
+            resultMap[chatId] = SearchMessageResult(
+              id: chatId,
+              name: "用户($chatId)",
+              avatar: "",
+              messageCount: 0,
+              messages: [],
+              type: '',
+            );
+          }, silent: true);
         }
       }
 
       // 添加消息到结果
       if (resultMap.containsKey(chatId)) {
         resultMap[chatId]!.messages.add(message);
-        resultMap[chatId]!.messageCount++;
+        resultMap[chatId]!.messageCount;
       }
     }
   }
 
+  /// 是否有搜索结果
+  bool get hasResults =>
+      contactResults.isNotEmpty ||
+      groupResults.isNotEmpty ||
+      messageResults.isNotEmpty;
+
   /// 清空搜索结果
   void clearResults() {
-    searchResults.clear();
+    _clearAllResults();
     currentKeyword.value = '';
     _searchDebounce.cancel();
-  }
-
-  // ==================== 辅助方法 ====================
-
-  /// 统一处理 API 响应
-  void _handleApiResponse(
-    Map<String, dynamic>? response, {
-    required void Function(dynamic) onSuccess,
-    required String errorMessage,
-  }) {
-    final code = Objects.safeGet<int>(response, 'code');
-    if (code == AppConstants.businessCodeSuccess) {
-      return onSuccess(response?['data']);
-    }
-    final msg = Objects.safeGet<String>(response, 'message') ?? errorMessage;
-    throw BusinessException(msg);
   }
 }

@@ -205,7 +205,7 @@ class _ReceiveBodyState extends State<ReceiveBody> {
                   onTap: () {
                     // TODO: 实现保存功能
                     Get.snackbar('提示', '保存功能开发中',
-                        snackPosition: SnackPosition.BOTTOM);
+                        snackPosition: SnackPosition.TOP);
                   },
                 ),
               ],
@@ -284,7 +284,7 @@ class _ReceiveBodyState extends State<ReceiveBody> {
                 Navigator.pop(context);
               } else {
                 Get.snackbar('错误', '请输入有效的金额',
-                    snackPosition: SnackPosition.BOTTOM);
+                    snackPosition: SnackPosition.TOP);
               }
             },
             child: const Text('确定'),
